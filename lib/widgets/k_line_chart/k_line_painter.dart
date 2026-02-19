@@ -117,7 +117,12 @@ class KLinePainter extends CustomPainter {
   }
 
   void _drawAxes(
-      Canvas canvas, Size size, Rect chartRect, double yMin, double yMax) {
+    Canvas canvas,
+    Size size,
+    Rect chartRect,
+    double yMin,
+    double yMax,
+  ) {
     final axisPaint = Paint()
       ..color = const Color(0xFFD1CDC2)
       ..strokeWidth = 1;
@@ -136,8 +141,7 @@ class KLinePainter extends CustomPainter {
 
     for (var i = 0; i <= 5; i++) {
       final value = yMin + (yMax - yMin) * i / 5;
-      final y = chartRect.bottom -
-          (i / 5) * chartRect.height;
+      final y = chartRect.bottom - (i / 5) * chartRect.height;
 
       // Dashed grid line
       canvas.drawLine(
@@ -154,11 +158,12 @@ class KLinePainter extends CustomPainter {
         text: labelText,
         style: const TextStyle(fontSize: 9, color: Color(0xFF6B7280)),
       );
-      final tp = TextPainter(
-        text: textSpan,
-        textDirection: TextDirection.ltr,
-      )..layout();
-      tp.paint(canvas, Offset(chartRect.left - tp.width - 4, y - tp.height / 2));
+      final tp = TextPainter(text: textSpan, textDirection: TextDirection.ltr)
+        ..layout();
+      tp.paint(
+        canvas,
+        Offset(chartRect.left - tp.width - 4, y - tp.height / 2),
+      );
     }
 
     // X-axis labels
@@ -177,7 +182,10 @@ class KLinePainter extends CustomPainter {
       textDirection: TextDirection.ltr,
     )..layout();
     canvas.save();
-    canvas.translate(8, chartRect.top + chartRect.height / 2 + yLabel.width / 2);
+    canvas.translate(
+      8,
+      chartRect.top + chartRect.height / 2 + yLabel.width / 2,
+    );
     canvas.rotate(-pi / 2);
     yLabel.paint(canvas, Offset.zero);
     canvas.restore();
@@ -191,14 +199,17 @@ class KLinePainter extends CustomPainter {
       ),
       textDirection: TextDirection.ltr,
     )..layout();
-    xLabel.paint(canvas,
-        Offset(chartRect.right - xLabel.width, chartRect.bottom + 20));
+    xLabel.paint(
+      canvas,
+      Offset(chartRect.right - xLabel.width, chartRect.bottom + 20),
+    );
   }
 
   void _drawYearXLabels(Canvas canvas, Rect chartRect) {
     for (var i = 0; i < data.length; i++) {
       if (i % 5 == 0 || i == data.length - 1) {
-        final x = chartRect.left +
+        final x =
+            chartRect.left +
             (i + 0.5) * (chartRect.width / data.length) -
             scrollOffset;
         if (x < chartRect.left || x > chartRect.right) continue;
@@ -207,10 +218,8 @@ class KLinePainter extends CustomPainter {
           text: '${data[i].age}',
           style: const TextStyle(fontSize: 9, color: Color(0xFF6B7280)),
         );
-        final tp = TextPainter(
-          text: textSpan,
-          textDirection: TextDirection.ltr,
-        )..layout();
+        final tp = TextPainter(text: textSpan, textDirection: TextDirection.ltr)
+          ..layout();
         tp.paint(canvas, Offset(x - tp.width / 2, chartRect.bottom + 4));
       }
     }
@@ -221,7 +230,8 @@ class KLinePainter extends CustomPainter {
     final labelInterval = viewMode == ChartViewMode.day ? 1 : 7;
     for (var i = 0; i < data.length; i++) {
       if (i % labelInterval == 0 || i == data.length - 1) {
-        final x = chartRect.left +
+        final x =
+            chartRect.left +
             (i + 0.5) * (chartRect.width / data.length) -
             scrollOffset;
         if (x < chartRect.left || x > chartRect.right) continue;
@@ -231,18 +241,20 @@ class KLinePainter extends CustomPainter {
           text: data[i].ganZhi,
           style: const TextStyle(fontSize: 8, color: Color(0xFF6B7280)),
         );
-        final tp = TextPainter(
-          text: textSpan,
-          textDirection: TextDirection.ltr,
-        )..layout();
+        final tp = TextPainter(text: textSpan, textDirection: TextDirection.ltr)
+          ..layout();
         tp.paint(canvas, Offset(x - tp.width / 2, chartRect.bottom + 4));
       }
     }
   }
 
   void _drawSupportPressureLines(
-      Canvas canvas, Rect chartRect, double Function(double) mapY,
-      double dataMin, double dataMax) {
+    Canvas canvas,
+    Rect chartRect,
+    double Function(double) mapY,
+    double dataMin,
+    double dataMax,
+  ) {
     final range = dataMax - dataMin;
     if (range <= 0) return;
 
@@ -265,13 +277,17 @@ class KLinePainter extends CustomPainter {
         text: const TextSpan(
           text: 'S',
           style: TextStyle(
-              fontSize: 12,
-              fontWeight: FontWeight.bold,
-              color: supportLineColor),
+            fontSize: 12,
+            fontWeight: FontWeight.bold,
+            color: supportLineColor,
+          ),
         ),
         textDirection: TextDirection.ltr,
       )..layout();
-      sLabel.paint(canvas, Offset(chartRect.left + 4, supportY - sLabel.height - 2));
+      sLabel.paint(
+        canvas,
+        Offset(chartRect.left + 4, supportY - sLabel.height - 2),
+      );
     }
 
     // Global pressure line R
@@ -293,19 +309,28 @@ class KLinePainter extends CustomPainter {
         text: const TextSpan(
           text: 'R',
           style: TextStyle(
-              fontSize: 12,
-              fontWeight: FontWeight.bold,
-              color: pressureLineColor),
+            fontSize: 12,
+            fontWeight: FontWeight.bold,
+            color: pressureLineColor,
+          ),
         ),
         textDirection: TextDirection.ltr,
       )..layout();
-      rLabel.paint(canvas,
-          Offset(chartRect.right - rLabel.width - 4, pressureY - rLabel.height - 2));
+      rLabel.paint(
+        canvas,
+        Offset(
+          chartRect.right - rLabel.width - 4,
+          pressureY - rLabel.height - 2,
+        ),
+      );
     }
   }
 
   void _drawDaYunLines(
-      Canvas canvas, Rect chartRect, double Function(int) mapX) {
+    Canvas canvas,
+    Rect chartRect,
+    double Function(int) mapX,
+  ) {
     String? lastDaYun;
     for (var i = 0; i < data.length; i++) {
       if (data[i].daYun != lastDaYun) {
@@ -337,14 +362,21 @@ class KLinePainter extends CustomPainter {
             ),
             textDirection: TextDirection.ltr,
           )..layout();
-          tp.paint(canvas, Offset(x - tp.width / 2, chartRect.top - tp.height - 2));
+          tp.paint(
+            canvas,
+            Offset(x - tp.width / 2, chartRect.top - tp.height - 2),
+          );
         }
       }
     }
   }
 
-  void _drawCurrentMarkerLine(Canvas canvas, Rect chartRect,
-      double Function(int) mapX, double Function(double) mapY) {
+  void _drawCurrentMarkerLine(
+    Canvas canvas,
+    Rect chartRect,
+    double Function(int) mapX,
+    double Function(double) mapY,
+  ) {
     if (viewMode == ChartViewMode.year) {
       _drawCurrentYearLine(canvas, chartRect, mapX, mapY);
     } else {
@@ -352,8 +384,12 @@ class KLinePainter extends CustomPainter {
     }
   }
 
-  void _drawCurrentYearLine(Canvas canvas, Rect chartRect,
-      double Function(int) mapX, double Function(double) mapY) {
+  void _drawCurrentYearLine(
+    Canvas canvas,
+    Rect chartRect,
+    double Function(int) mapX,
+    double Function(double) mapY,
+  ) {
     final currentYear = DateTime.now().year;
     final idx = data.indexWhere((d) => d.year == currentYear);
     if (idx < 0) return;
@@ -386,12 +422,18 @@ class KLinePainter extends CustomPainter {
     tp.paint(canvas, Offset(x - tp.width / 2, chartRect.top - tp.height - 14));
   }
 
-  void _drawTodayLine(Canvas canvas, Rect chartRect,
-      double Function(int) mapX, double Function(double) mapY) {
+  void _drawTodayLine(
+    Canvas canvas,
+    Rect chartRect,
+    double Function(int) mapX,
+    double Function(double) mapY,
+  ) {
     final now = DateTime.now();
     final todayLabel = '${now.month}/${now.day}';
     // Find index of today's date in the interpolated data
-    final idx = data.indexWhere((d) => d.ganZhi == todayLabel && d.year == now.year);
+    final idx = data.indexWhere(
+      (d) => d.ganZhi == todayLabel && d.year == now.year,
+    );
     if (idx < 0) return;
 
     final x = mapX(idx);
@@ -422,8 +464,12 @@ class KLinePainter extends CustomPainter {
     tp.paint(canvas, Offset(x - tp.width / 2, chartRect.top - tp.height - 14));
   }
 
-  void _drawMovingAverageLine(Canvas canvas, Rect chartRect,
-      double Function(int) mapX, double Function(double) mapY) {
+  void _drawMovingAverageLine(
+    Canvas canvas,
+    Rect chartRect,
+    double Function(int) mapX,
+    double Function(double) mapY,
+  ) {
     if (data.length < 2) return;
 
     // Use MK5 for day view (fewer data points), MK10 for others
@@ -432,8 +478,7 @@ class KLinePainter extends CustomPainter {
     final mkValues = List<double>.generate(data.length, (i) {
       final start = max(0, i - (window - 1));
       final slice = data.sublist(start, i + 1);
-      return slice.map((d) => d.close).reduce((a, b) => a + b) /
-          slice.length;
+      return slice.map((d) => d.close).reduce((a, b) => a + b) / slice.length;
     });
 
     final path = Path();
@@ -461,11 +506,18 @@ class KLinePainter extends CustomPainter {
     );
   }
 
-  void _drawCandles(Canvas canvas, Rect chartRect,
-      double Function(int) mapX, double Function(double) mapY, double cWidth) {
+  void _drawCandles(
+    Canvas canvas,
+    Rect chartRect,
+    double Function(int) mapX,
+    double Function(double) mapY,
+    double cWidth,
+  ) {
     for (var i = 0; i < data.length; i++) {
       final d = data[i];
       final x = mapX(i);
+
+      // 超出绘图区就跳过
       if (x - cWidth / 2 > chartRect.right || x + cWidth / 2 < chartRect.left) {
         continue;
       }
@@ -474,25 +526,27 @@ class KLinePainter extends CustomPainter {
       final bodyColor = isUp ? cinnabarRed : indigo;
       final strokeColor = isUp ? cinnabarStroke : indigoStroke;
 
-      final highY = mapY(d.high);
-      final lowY = mapY(d.low);
       final openY = mapY(d.open);
       final closeY = mapY(d.close);
       final bodyTop = min(openY, closeY);
       final bodyBottom = max(openY, closeY);
       final bodyHeight = max(bodyBottom - bodyTop, 2.0);
-
-      // Wick
-      canvas.drawLine(
-        Offset(x, highY),
-        Offset(x, lowY),
-        Paint()
-          ..color = strokeColor.withValues(alpha: 0.8)
-          ..strokeWidth = 1.5,
-      );
-
-      // Diamond body (four points: top, right, bottom, left)
       final midY = bodyTop + bodyHeight / 2;
+
+      // 仅年视图绘制 Wick
+      if (viewMode == ChartViewMode.year) {
+        final highY = mapY(d.high);
+        final lowY = mapY(d.low);
+        canvas.drawLine(
+          Offset(x, highY),
+          Offset(x, lowY),
+          Paint()
+            ..color = strokeColor.withValues(alpha: 0.8)
+            ..strokeWidth = 1.5,
+        );
+      }
+
+      // 绘制中间菱形
       final path = Path()
         ..moveTo(x, bodyTop)
         ..lineTo(x + cWidth / 2, midY)
@@ -514,7 +568,7 @@ class KLinePainter extends CustomPainter {
           ..strokeWidth = 1,
       );
 
-      // Highlight selected candle
+      // 高亮选中的蜡烛
       if (selectedIndex == i) {
         canvas.drawPath(
           path,
@@ -526,8 +580,12 @@ class KLinePainter extends CustomPainter {
     }
   }
 
-  void _drawPeakSeal(Canvas canvas, double Function(int) mapX,
-      double Function(double) mapY, double cWidth) {
+  void _drawPeakSeal(
+    Canvas canvas,
+    double Function(int) mapX,
+    double Function(double) mapY,
+    double cWidth,
+  ) {
     if (data.isEmpty) return;
 
     final maxHigh = data.map((d) => d.high).reduce(max);
@@ -541,7 +599,11 @@ class KLinePainter extends CustomPainter {
 
     // Seal background
     final sealRect = RRect.fromRectAndRadius(
-      Rect.fromCenter(center: Offset(x, y - size - 4), width: size, height: size),
+      Rect.fromCenter(
+        center: Offset(x, y - size - 4),
+        width: size,
+        height: size,
+      ),
       const Radius.circular(3),
     );
     canvas.drawRRect(
@@ -552,7 +614,10 @@ class KLinePainter extends CustomPainter {
     canvas.drawRRect(
       RRect.fromRectAndRadius(
         Rect.fromCenter(
-            center: Offset(x, y - size - 4), width: size - 4, height: size - 4),
+          center: Offset(x, y - size - 4),
+          width: size - 4,
+          height: size - 4,
+        ),
         const Radius.circular(2),
       ),
       Paint()
@@ -578,8 +643,12 @@ class KLinePainter extends CustomPainter {
     tp.paint(canvas, Offset(x - tp.width / 2, y - size - 4 - tp.height / 2));
   }
 
-  void _drawActionAdviceStamps(Canvas canvas, double Function(int) mapX,
-      double Function(double) mapY, double cWidth) {
+  void _drawActionAdviceStamps(
+    Canvas canvas,
+    double Function(int) mapX,
+    double Function(double) mapY,
+    double cWidth,
+  ) {
     for (var i = 0; i < data.length; i++) {
       if (data[i].actionAdvice == null) continue;
       final d = data[i];
@@ -596,7 +665,10 @@ class KLinePainter extends CustomPainter {
 
       final sealRect = RRect.fromRectAndRadius(
         Rect.fromCenter(
-            center: Offset(x, y - size / 2 - 4), width: size, height: size),
+          center: Offset(x, y - size / 2 - 4),
+          width: size,
+          height: size,
+        ),
         const Radius.circular(1.5),
       );
       canvas.drawRRect(
@@ -606,9 +678,10 @@ class KLinePainter extends CustomPainter {
       canvas.drawRRect(
         RRect.fromRectAndRadius(
           Rect.fromCenter(
-              center: Offset(x, y - size / 2 - 4),
-              width: size - 2,
-              height: size - 2),
+            center: Offset(x, y - size / 2 - 4),
+            width: size - 2,
+            height: size - 2,
+          ),
           const Radius.circular(1),
         ),
         Paint()
@@ -627,8 +700,10 @@ class KLinePainter extends CustomPainter {
         ),
         textDirection: TextDirection.ltr,
       )..layout();
-      tp.paint(canvas,
-          Offset(x - tp.width / 2, y - size / 2 - 4 - tp.height / 2));
+      tp.paint(
+        canvas,
+        Offset(x - tp.width / 2, y - size / 2 - 4 - tp.height / 2),
+      );
     }
   }
 
@@ -705,8 +780,14 @@ class KLinePainter extends CustomPainter {
     mkLabel.paint(canvas, Offset(x, y - mkLabel.height / 2));
   }
 
-  void _drawDashedLine(Canvas canvas, Offset start, Offset end, Paint paint,
-      double dashWidth, double dashSpace) {
+  void _drawDashedLine(
+    Canvas canvas,
+    Offset start,
+    Offset end,
+    Paint paint,
+    double dashWidth,
+    double dashSpace,
+  ) {
     final dx = end.dx - start.dx;
     final dy = end.dy - start.dy;
     final length = sqrt(dx * dx + dy * dy);

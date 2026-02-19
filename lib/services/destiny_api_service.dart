@@ -18,23 +18,21 @@ class DestinyApiService {
     required this.authToken,
     required this.model,
     Dio? dio,
-  }) : _dio = dio ??
-            Dio(BaseOptions(
-              connectTimeout: const Duration(seconds: 30),
-              receiveTimeout: const Duration(seconds: 120),
-            ));
+  }) : _dio =
+           dio ??
+           Dio(
+             BaseOptions(
+               connectTimeout: const Duration(seconds: 60),
+               receiveTimeout: const Duration(seconds: 300),
+             ),
+           );
 
-  /// Generate user prompt from input
+  /// Generate user prompt from input (user data only, system prompt sent separately)
   String _generateUserPrompt(UserInput input) {
     final direction = _getDaYunDirection(input.yearPillar, input.gender);
-    final genderText =
-        input.gender == Gender.male ? '乾造（男）' : '坤造（女）';
+    final genderText = input.gender == Gender.male ? '乾造（男）' : '坤造（女）';
 
-    return '''$baziSystemInstruction
-
----
-
-**用户八字信息:**
+    return '''**用户八字信息:**
 - 性别: $genderText
 - 出生年份: ${input.birthYear}
 - 四柱: ${input.yearPillar}年 ${input.monthPillar}月 ${input.dayPillar}日 ${input.hourPillar}时
@@ -45,9 +43,10 @@ class DestinyApiService {
   }
 
   ({bool isForward, String text}) _getDaYunDirection(
-      String yearPillar, Gender gender) {
-    final firstChar =
-        yearPillar.trim().isNotEmpty ? yearPillar.trim()[0] : '';
+    String yearPillar,
+    Gender gender,
+  ) {
+    final firstChar = yearPillar.trim().isNotEmpty ? yearPillar.trim()[0] : '';
     const yangStems = ['甲', '丙', '戊', '庚', '壬'];
     final isYangYear = yangStems.contains(firstChar);
     final isForward = gender == Gender.male ? isYangYear : !isYangYear;
@@ -59,7 +58,7 @@ class DestinyApiService {
     final prompt = _generateUserPrompt(input);
 
     const maxRetries = 3;
-    const initialRetryDelay = Duration(seconds: 1);
+    const initialRetryDelay = Duration(seconds: 5);
 
     Exception? lastError;
 
@@ -72,44 +71,46 @@ class DestinyApiService {
               'Content-Type': 'application/json',
               'anthropic-version': '2023-06-01',
               'x-api-key': authToken,
-              'Authorization': 'Bearer $authToken',
             },
+            // Prevent Dio from throwing on non-2xx so we can handle status codes
+            validateStatus: (status) => status != null,
           ),
           data: {
             'model': model,
             'max_tokens': 16000,
             'temperature': 0.5,
+            'system': baziSystemInstruction,
             'messages': [
-              {'role': 'user', 'content': prompt}
+              {'role': 'user', 'content': prompt},
             ],
           },
         );
 
-        if (response.statusCode == 200) {
+        final status = response.statusCode ?? 0;
+
+        if (status == 200) {
           return _parseResponse(response.data);
         }
 
-        // 4xx errors: don't retry
-        if (response.statusCode != null &&
-            response.statusCode! >= 400 &&
-            response.statusCode! < 500) {
-          throw Exception(
-              'API 错误 (${response.statusCode}): ${response.data}');
+        // 4xx errors: don't retry, it's a client-side problem
+        if (status >= 400 && status < 500) {
+          throw Exception('API 错误 ($status): ${response.data}');
         }
+
+        // 5xx errors: retry
+        lastError = Exception(
+          'API 服务端错误 ($status): ${response.data}',
+        );
       } on DioException catch (e) {
         lastError = e;
-        if (attempt < maxRetries) {
-          final delay = initialRetryDelay * (1 << (attempt - 1));
-          await Future.delayed(delay);
-          continue;
-        }
       } catch (e) {
-        lastError = e is Exception ? e : Exception(e.toString());
-        if (attempt < maxRetries) {
-          final delay = initialRetryDelay * (1 << (attempt - 1));
-          await Future.delayed(delay);
-          continue;
-        }
+        if (e is Exception) rethrow; // rethrow 4xx immediately
+        lastError = Exception(e.toString());
+      }
+
+      if (attempt < maxRetries) {
+        final delay = initialRetryDelay * (1 << (attempt - 1)); // 5s, 10s
+        await Future.delayed(delay);
       }
     }
 
@@ -145,8 +146,7 @@ class DestinyApiService {
   }
 
   /// Transform raw AI response (flat or nested) to LifeDestinyResult
-  LifeDestinyResult _transformToLifeDestinyResult(
-      Map<String, dynamic> data) {
+  LifeDestinyResult _transformToLifeDestinyResult(Map<String, dynamic> data) {
     // Check if already nested format
     if (data.containsKey('chartData') &&
         data.containsKey('analysis') &&
@@ -154,15 +154,15 @@ class DestinyApiService {
       final chartData = (data['chartData'] as List)
           .map((e) => _normalizeKLinePoint(e as Map<String, dynamic>))
           .toList();
-      final analysis =
-          _normalizeAnalysis(data['analysis'] as Map<String, dynamic>);
+      final analysis = _normalizeAnalysis(
+        data['analysis'] as Map<String, dynamic>,
+      );
       return LifeDestinyResult(chartData: chartData, analysis: analysis);
     }
 
     // Flat format: extract chartPoints/chartData and analysis fields
-    final rawChartData = (data['chartPoints'] as List?) ??
-        (data['chartData'] as List?) ??
-        [];
+    final rawChartData =
+        (data['chartPoints'] as List?) ?? (data['chartData'] as List?) ?? [];
     final chartData = rawChartData
         .map((e) => _normalizeKLinePoint(e as Map<String, dynamic>))
         .toList();
@@ -193,8 +193,7 @@ class DestinyApiService {
       'cryptoScore',
     ]) {
       if (normalized[key] != null) {
-        normalized[key] =
-            normalizeScore((normalized[key] as num).toDouble());
+        normalized[key] = normalizeScore((normalized[key] as num).toDouble());
       }
     }
 
@@ -203,9 +202,17 @@ class DestinyApiService {
 
     // Ensure string fields have defaults
     for (final key in [
-      'summary', 'personality', 'industry', 'fengShui',
-      'wealth', 'marriage', 'health', 'family', 'crypto',
-      'cryptoYear', 'cryptoStyle',
+      'summary',
+      'personality',
+      'industry',
+      'fengShui',
+      'wealth',
+      'marriage',
+      'health',
+      'family',
+      'crypto',
+      'cryptoYear',
+      'cryptoStyle',
     ]) {
       normalized[key] ??= '';
     }

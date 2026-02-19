@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:go_router/go_router.dart';
+import 'package:life_k/core/config/env.dart';
 import 'services/storage_service.dart';
 import 'services/destiny_api_service.dart';
 import 'blocs/user_input/user_input_bloc.dart';
@@ -22,22 +23,10 @@ class LifeKApp extends StatelessWidget {
   Widget build(BuildContext context) {
     final storageService = StorageService();
 
-    const baseUrl = String.fromEnvironment(
-      'API_BASE_URL',
-      defaultValue: 'https://api.anthropic.com',
-    );
-
-    const authToken = String.fromEnvironment('API_AUTH_TOKEN');
-
-    const model = String.fromEnvironment(
-      'API_MODEL',
-      defaultValue: 'claude-sonnet-4-20250514',
-    );
-
     final apiService = DestinyApiService(
-      baseUrl: baseUrl,
-      authToken: authToken,
-      model: model,
+      baseUrl: Env.baseUrl,
+      authToken: Env.authToken,
+      model: Env.model,
     );
 
     return MultiRepositoryProvider(
@@ -67,10 +56,7 @@ class LifeKApp extends StatelessWidget {
             GlobalWidgetsLocalizations.delegate,
             GlobalCupertinoLocalizations.delegate,
           ],
-          supportedLocales: const [
-            Locale('zh', 'CN'),
-            Locale('en', 'US'),
-          ],
+          supportedLocales: const [Locale('zh', 'CN'), Locale('en', 'US')],
           theme: _buildTheme(),
           routerConfig: _router,
         ),

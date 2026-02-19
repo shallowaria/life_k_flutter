@@ -1,11 +1,19 @@
 import 'package:flutter/material.dart';
 import '../../models/k_line_point.dart';
+import 'chart_view_mode.dart';
 
 /// Tooltip overlay for K-line chart showing detailed info about a data point
 class KLineTooltip extends StatelessWidget {
   final KLinePoint point;
+  final ChartViewMode viewMode;
 
-  const KLineTooltip({super.key, required this.point});
+  const KLineTooltip({
+    super.key,
+    required this.point,
+    this.viewMode = ChartViewMode.year,
+  });
+
+  bool get _isInterpolated => viewMode != ChartViewMode.year;
 
   @override
   Widget build(BuildContext context) {
@@ -35,23 +43,27 @@ class KLineTooltip extends StatelessWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        '${point.year} ${point.ganZhi}年 (${point.age}岁)',
+                        _isInterpolated
+                            ? '${point.year}/${point.ganZhi} (${point.age}岁)'
+                            : '${point.year} ${point.ganZhi}年 (${point.age}岁)',
                         style: const TextStyle(
                           fontSize: 15,
                           fontWeight: FontWeight.bold,
                           color: Color(0xFF1F2937),
                         ),
                       ),
-                      const SizedBox(height: 2),
-                      Text(
-                        '大运: ${point.daYun ?? "未知"}',
-                        style: const TextStyle(
-                          fontSize: 12,
-                          color: Color(0xFF4F46E5),
-                          fontWeight: FontWeight.w500,
+                      if (!_isInterpolated) ...[
+                        const SizedBox(height: 2),
+                        Text(
+                          '大运: ${point.daYun ?? "未知"}',
+                          style: const TextStyle(
+                            fontSize: 12,
+                            color: Color(0xFF4F46E5),
+                            fontWeight: FontWeight.w500,
+                          ),
                         ),
-                      ),
-                      if (point.tenGod != null) ...[
+                      ],
+                      if (!_isInterpolated && point.tenGod != null) ...[
                         const SizedBox(height: 2),
                         Text(
                           '十神: ${point.tenGod!.label}',
@@ -109,8 +121,8 @@ class KLineTooltip extends StatelessWidget {
 
             const SizedBox(height: 10),
 
-            // Energy score
-            if (point.energyScore != null) ...[
+            // Energy score (year view only, when available)
+            if (!_isInterpolated && point.energyScore != null) ...[
               Container(
                 padding: const EdgeInsets.all(10),
                 decoration: BoxDecoration(
@@ -165,14 +177,23 @@ class KLineTooltip extends StatelessWidget {
               const SizedBox(height: 10),
             ],
 
-            // Reason
+            // Reason / interpolation note
             Text(
               point.reason,
               style: const TextStyle(fontSize: 13, color: Color(0xFF374151), height: 1.4),
             ),
 
-            // Action advice
-            if (point.actionAdvice != null) ...[
+            // Base score (interpolated views)
+            if (_isInterpolated) ...[
+              const SizedBox(height: 4),
+              Text(
+                '基准分: ${point.score.toStringAsFixed(2)}',
+                style: const TextStyle(fontSize: 11, color: Color(0xFF6B7280)),
+              ),
+            ],
+
+            // Action advice (year view only, when available)
+            if (!_isInterpolated && point.actionAdvice != null) ...[
               const Divider(height: 20),
               Row(
                 children: [
@@ -240,13 +261,16 @@ class KLineTooltip extends StatelessWidget {
   }
 
   Widget _buildOhlcItem(String label, double value) {
+    final valueText = _isInterpolated
+        ? value.toStringAsFixed(2)
+        : value.toInt().toString();
     return Column(
       children: [
         Text(label,
             style: const TextStyle(fontSize: 10, color: Color(0xFF6B7280))),
         const SizedBox(height: 2),
         Text(
-          value.toInt().toString(),
+          valueText,
           style: const TextStyle(
               fontSize: 13,
               fontWeight: FontWeight.bold,

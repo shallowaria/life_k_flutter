@@ -2,6 +2,7 @@ import 'dart:math';
 import 'package:flutter/material.dart';
 import '../../models/k_line_point.dart';
 import '../../models/analysis_data.dart';
+import '../k_line_chart/chart_view_mode.dart';
 
 /// CustomPainter that draws the life K-line candlestick chart
 class KLinePainter extends CustomPainter {
@@ -10,6 +11,7 @@ class KLinePainter extends CustomPainter {
   final int? selectedIndex;
   final double scrollOffset;
   final double candleWidth;
+  final ChartViewMode viewMode;
 
   // Colors - Chinese painting aesthetic
   static const Color cinnabarRed = Color(0xFFB22D1B); // 朱砂红 - up/吉
@@ -27,6 +29,7 @@ class KLinePainter extends CustomPainter {
     this.selectedIndex,
     this.scrollOffset = 0,
     this.candleWidth = 20,
+    this.viewMode = ChartViewMode.year,
   });
 
   // Chart layout constants
@@ -50,8 +53,23 @@ class KLinePainter extends CustomPainter {
     final allValues = data.expand((d) => [d.low, d.high]).toList();
     final dataMin = allValues.reduce(min).toDouble();
     final dataMax = allValues.reduce(max).toDouble();
-    final yMin = 0.0;
-    final yMax = (dataMax + 5).clamp(0, 100).toDouble();
+
+    double yMin;
+    double yMax;
+    if (viewMode == ChartViewMode.year) {
+      yMin = 0.0;
+      yMax = (dataMax + 5).clamp(0, 100).toDouble();
+    } else {
+      // Dynamic Y-axis for month/day views
+      final padding = (dataMax - dataMin) * 0.15;
+      yMin = (dataMin - padding).clamp(0.0, 10.0);
+      yMax = (dataMax + padding).clamp(0.0, 10.0);
+      // Ensure minimum range
+      if (yMax - yMin < 0.5) {
+        yMin = (yMin - 0.25).clamp(0.0, 10.0);
+        yMax = (yMax + 0.25).clamp(0.0, 10.0);
+      }
+    }
 
     double mapY(double value) {
       return chartRect.bottom -
@@ -72,14 +90,16 @@ class KLinePainter extends CustomPainter {
     // Draw support/pressure reference lines
     _drawSupportPressureLines(canvas, chartRect, mapY, dataMin, dataMax);
 
-    // Draw Da Yun change lines
-    _drawDaYunLines(canvas, chartRect, mapX);
+    // Draw Da Yun change lines (year view only)
+    if (viewMode == ChartViewMode.year) {
+      _drawDaYunLines(canvas, chartRect, mapX);
+    }
 
-    // Draw current year line
-    _drawCurrentYearLine(canvas, chartRect, mapX, mapY);
+    // Draw current year/today line
+    _drawCurrentMarkerLine(canvas, chartRect, mapX, mapY);
 
-    // Draw MK10 line
-    _drawMK10Line(canvas, chartRect, mapX, mapY);
+    // Draw moving average line
+    _drawMovingAverageLine(canvas, chartRect, mapX, mapY);
 
     // Draw candles
     _drawCandles(canvas, chartRect, mapX, mapY, cWidth);
@@ -87,8 +107,10 @@ class KLinePainter extends CustomPainter {
     // Draw peak seal stamp
     _drawPeakSeal(canvas, mapX, mapY, cWidth);
 
-    // Draw action advice stamps
-    _drawActionAdviceStamps(canvas, mapX, mapY, cWidth);
+    // Draw action advice stamps (year view only)
+    if (viewMode == ChartViewMode.year) {
+      _drawActionAdviceStamps(canvas, mapX, mapY, cWidth);
+    }
 
     // Draw legend
     _drawLegend(canvas, size);
@@ -124,9 +146,12 @@ class KLinePainter extends CustomPainter {
         yTickPaint,
       );
 
-      // Label
+      // Label — use 1 decimal place for month/day views
+      final labelText = viewMode == ChartViewMode.year
+          ? value.toInt().toString()
+          : value.toStringAsFixed(1);
       final textSpan = TextSpan(
-        text: value.toInt().toString(),
+        text: labelText,
         style: const TextStyle(fontSize: 9, color: Color(0xFF6B7280)),
       );
       final tp = TextPainter(
@@ -136,7 +161,41 @@ class KLinePainter extends CustomPainter {
       tp.paint(canvas, Offset(chartRect.left - tp.width - 4, y - tp.height / 2));
     }
 
-    // X-axis labels (age)
+    // X-axis labels
+    if (viewMode == ChartViewMode.year) {
+      _drawYearXLabels(canvas, chartRect);
+    } else {
+      _drawDateXLabels(canvas, chartRect);
+    }
+
+    // Y-axis label
+    final yLabel = TextPainter(
+      text: const TextSpan(
+        text: '运势分',
+        style: TextStyle(fontSize: 9, color: Color(0xFF9CA3AF)),
+      ),
+      textDirection: TextDirection.ltr,
+    )..layout();
+    canvas.save();
+    canvas.translate(8, chartRect.top + chartRect.height / 2 + yLabel.width / 2);
+    canvas.rotate(-pi / 2);
+    yLabel.paint(canvas, Offset.zero);
+    canvas.restore();
+
+    // X-axis label
+    final xLabelText = viewMode == ChartViewMode.year ? '年龄' : '日期';
+    final xLabel = TextPainter(
+      text: TextSpan(
+        text: xLabelText,
+        style: const TextStyle(fontSize: 9, color: Color(0xFF9CA3AF)),
+      ),
+      textDirection: TextDirection.ltr,
+    )..layout();
+    xLabel.paint(canvas,
+        Offset(chartRect.right - xLabel.width, chartRect.bottom + 20));
+  }
+
+  void _drawYearXLabels(Canvas canvas, Rect chartRect) {
     for (var i = 0; i < data.length; i++) {
       if (i % 5 == 0 || i == data.length - 1) {
         final x = chartRect.left +
@@ -155,90 +214,94 @@ class KLinePainter extends CustomPainter {
         tp.paint(canvas, Offset(x - tp.width / 2, chartRect.bottom + 4));
       }
     }
+  }
 
-    // Y-axis label
-    final yLabel = TextPainter(
-      text: const TextSpan(
-        text: '运势分',
-        style: TextStyle(fontSize: 9, color: Color(0xFF9CA3AF)),
-      ),
-      textDirection: TextDirection.ltr,
-    )..layout();
-    canvas.save();
-    canvas.translate(8, chartRect.top + chartRect.height / 2 + yLabel.width / 2);
-    canvas.rotate(-pi / 2);
-    yLabel.paint(canvas, Offset.zero);
-    canvas.restore();
+  void _drawDateXLabels(Canvas canvas, Rect chartRect) {
+    // Determine label frequency based on view mode
+    final labelInterval = viewMode == ChartViewMode.day ? 1 : 7;
+    for (var i = 0; i < data.length; i++) {
+      if (i % labelInterval == 0 || i == data.length - 1) {
+        final x = chartRect.left +
+            (i + 0.5) * (chartRect.width / data.length) -
+            scrollOffset;
+        if (x < chartRect.left || x > chartRect.right) continue;
 
-    // X-axis label
-    final xLabel = TextPainter(
-      text: const TextSpan(
-        text: '年龄',
-        style: TextStyle(fontSize: 9, color: Color(0xFF9CA3AF)),
-      ),
-      textDirection: TextDirection.ltr,
-    )..layout();
-    xLabel.paint(canvas,
-        Offset(chartRect.right - xLabel.width, chartRect.bottom + 20));
+        // ganZhi stores the date string (M/D) for interpolated points
+        final textSpan = TextSpan(
+          text: data[i].ganZhi,
+          style: const TextStyle(fontSize: 8, color: Color(0xFF6B7280)),
+        );
+        final tp = TextPainter(
+          text: textSpan,
+          textDirection: TextDirection.ltr,
+        )..layout();
+        tp.paint(canvas, Offset(x - tp.width / 2, chartRect.bottom + 4));
+      }
+    }
   }
 
   void _drawSupportPressureLines(
       Canvas canvas, Rect chartRect, double Function(double) mapY,
       double dataMin, double dataMax) {
     final range = dataMax - dataMin;
+    if (range <= 0) return;
 
     // Global support line S
     final supportValue = max(0.0, dataMin + range * 0.08);
     final supportY = mapY(supportValue);
-    _drawDashedLine(
-      canvas,
-      Offset(chartRect.left, supportY),
-      Offset(chartRect.right, supportY),
-      Paint()
-        ..color = supportLineColor.withValues(alpha: 0.6)
-        ..strokeWidth = 2,
-      5,
-      5,
-    );
-    // S label
-    final sLabel = TextPainter(
-      text: const TextSpan(
-        text: 'S',
-        style: TextStyle(
-            fontSize: 12,
-            fontWeight: FontWeight.bold,
-            color: supportLineColor),
-      ),
-      textDirection: TextDirection.ltr,
-    )..layout();
-    sLabel.paint(canvas, Offset(chartRect.left + 4, supportY - sLabel.height - 2));
+    if (supportY >= chartRect.top && supportY <= chartRect.bottom) {
+      _drawDashedLine(
+        canvas,
+        Offset(chartRect.left, supportY),
+        Offset(chartRect.right, supportY),
+        Paint()
+          ..color = supportLineColor.withValues(alpha: 0.6)
+          ..strokeWidth = 2,
+        5,
+        5,
+      );
+      // S label
+      final sLabel = TextPainter(
+        text: const TextSpan(
+          text: 'S',
+          style: TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.bold,
+              color: supportLineColor),
+        ),
+        textDirection: TextDirection.ltr,
+      )..layout();
+      sLabel.paint(canvas, Offset(chartRect.left + 4, supportY - sLabel.height - 2));
+    }
 
     // Global pressure line R
     final pressureValue = dataMax - range * 0.1;
     final pressureY = mapY(pressureValue);
-    _drawDashedLine(
-      canvas,
-      Offset(chartRect.left, pressureY),
-      Offset(chartRect.right, pressureY),
-      Paint()
-        ..color = pressureLineColor.withValues(alpha: 0.6)
-        ..strokeWidth = 2,
-      5,
-      5,
-    );
-    // R label
-    final rLabel = TextPainter(
-      text: const TextSpan(
-        text: 'R',
-        style: TextStyle(
-            fontSize: 12,
-            fontWeight: FontWeight.bold,
-            color: pressureLineColor),
-      ),
-      textDirection: TextDirection.ltr,
-    )..layout();
-    rLabel.paint(canvas,
-        Offset(chartRect.right - rLabel.width - 4, pressureY - rLabel.height - 2));
+    if (pressureY >= chartRect.top && pressureY <= chartRect.bottom) {
+      _drawDashedLine(
+        canvas,
+        Offset(chartRect.left, pressureY),
+        Offset(chartRect.right, pressureY),
+        Paint()
+          ..color = pressureLineColor.withValues(alpha: 0.6)
+          ..strokeWidth = 2,
+        5,
+        5,
+      );
+      // R label
+      final rLabel = TextPainter(
+        text: const TextSpan(
+          text: 'R',
+          style: TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.bold,
+              color: pressureLineColor),
+        ),
+        textDirection: TextDirection.ltr,
+      )..layout();
+      rLabel.paint(canvas,
+          Offset(chartRect.right - rLabel.width - 4, pressureY - rLabel.height - 2));
+    }
   }
 
   void _drawDaYunLines(
@@ -280,6 +343,15 @@ class KLinePainter extends CustomPainter {
     }
   }
 
+  void _drawCurrentMarkerLine(Canvas canvas, Rect chartRect,
+      double Function(int) mapX, double Function(double) mapY) {
+    if (viewMode == ChartViewMode.year) {
+      _drawCurrentYearLine(canvas, chartRect, mapX, mapY);
+    } else {
+      _drawTodayLine(canvas, chartRect, mapX, mapY);
+    }
+  }
+
   void _drawCurrentYearLine(Canvas canvas, Rect chartRect,
       double Function(int) mapX, double Function(double) mapY) {
     final currentYear = DateTime.now().year;
@@ -314,27 +386,66 @@ class KLinePainter extends CustomPainter {
     tp.paint(canvas, Offset(x - tp.width / 2, chartRect.top - tp.height - 14));
   }
 
-  void _drawMK10Line(Canvas canvas, Rect chartRect,
+  void _drawTodayLine(Canvas canvas, Rect chartRect,
+      double Function(int) mapX, double Function(double) mapY) {
+    final now = DateTime.now();
+    final todayLabel = '${now.month}/${now.day}';
+    // Find index of today's date in the interpolated data
+    final idx = data.indexWhere((d) => d.ganZhi == todayLabel && d.year == now.year);
+    if (idx < 0) return;
+
+    final x = mapX(idx);
+    if (x < chartRect.left || x > chartRect.right) return;
+
+    _drawDashedLine(
+      canvas,
+      Offset(x, chartRect.top),
+      Offset(x, chartRect.bottom),
+      Paint()
+        ..color = const Color(0xFFFFA500).withValues(alpha: 0.7)
+        ..strokeWidth = 2,
+      5,
+      5,
+    );
+
+    final tp = TextPainter(
+      text: const TextSpan(
+        text: '今日',
+        style: TextStyle(
+          fontSize: 10,
+          fontWeight: FontWeight.bold,
+          color: Color(0xFFFFA500),
+        ),
+      ),
+      textDirection: TextDirection.ltr,
+    )..layout();
+    tp.paint(canvas, Offset(x - tp.width / 2, chartRect.top - tp.height - 14));
+  }
+
+  void _drawMovingAverageLine(Canvas canvas, Rect chartRect,
       double Function(int) mapX, double Function(double) mapY) {
     if (data.length < 2) return;
 
-    final mk10 = List<double>.generate(data.length, (i) {
-      final start = max(0, i - 9);
-      final window = data.sublist(start, i + 1);
-      return window.map((d) => d.close).reduce((a, b) => a + b) /
-          window.length;
+    // Use MK5 for day view (fewer data points), MK10 for others
+    final window = viewMode == ChartViewMode.day ? 5 : 10;
+
+    final mkValues = List<double>.generate(data.length, (i) {
+      final start = max(0, i - (window - 1));
+      final slice = data.sublist(start, i + 1);
+      return slice.map((d) => d.close).reduce((a, b) => a + b) /
+          slice.length;
     });
 
     final path = Path();
-    for (var i = 0; i < mk10.length; i++) {
+    for (var i = 0; i < mkValues.length; i++) {
       final x = mapX(i);
-      final y = mapY(mk10[i]);
+      final y = mapY(mkValues[i]);
       if (i == 0) {
         path.moveTo(x, y);
       } else {
         // Smooth curve
         final prevX = mapX(i - 1);
-        final prevY = mapY(mk10[i - 1]);
+        final prevY = mapY(mkValues[i - 1]);
         final cpX = (prevX + x) / 2;
         path.cubicTo(cpX, prevY, cpX, y, x, y);
       }
@@ -450,9 +561,12 @@ class KLinePainter extends CustomPainter {
         ..strokeWidth = 1,
     );
     // Score text
+    final scoreText = viewMode == ChartViewMode.year
+        ? maxHigh.toInt().toString()
+        : maxHigh.toStringAsFixed(1);
     final tp = TextPainter(
       text: TextSpan(
-        text: maxHigh.toInt().toString(),
+        text: scoreText,
         style: const TextStyle(
           fontSize: fontSize,
           fontWeight: FontWeight.bold,
@@ -571,7 +685,8 @@ class KLinePainter extends CustomPainter {
     srLabel.paint(canvas, Offset(x, y - srLabel.height / 2));
     x += srLabel.width + 16;
 
-    // MK10 legend
+    // Moving average legend
+    final mkLabelText = viewMode == ChartViewMode.day ? 'MK5' : 'MK10';
     canvas.drawLine(
       Offset(x, y),
       Offset(x + 20, y),
@@ -581,9 +696,9 @@ class KLinePainter extends CustomPainter {
     );
     x += 24;
     final mkLabel = TextPainter(
-      text: const TextSpan(
-        text: 'MK10',
-        style: TextStyle(fontSize: 10, color: Color(0xFF4338CA)),
+      text: TextSpan(
+        text: mkLabelText,
+        style: const TextStyle(fontSize: 10, color: Color(0xFF4338CA)),
       ),
       textDirection: TextDirection.ltr,
     )..layout();
@@ -614,6 +729,7 @@ class KLinePainter extends CustomPainter {
   bool shouldRepaint(covariant KLinePainter oldDelegate) {
     return oldDelegate.data != data ||
         oldDelegate.selectedIndex != selectedIndex ||
-        oldDelegate.scrollOffset != scrollOffset;
+        oldDelegate.scrollOffset != scrollOffset ||
+        oldDelegate.viewMode != viewMode;
   }
 }

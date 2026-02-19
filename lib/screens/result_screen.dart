@@ -54,7 +54,10 @@ class ResultScreen extends StatelessWidget {
                     backgroundColor: Colors.transparent,
                     elevation: 0,
                     leading: IconButton(
-                      icon: const Icon(Icons.arrow_back, color: Color(0xFF2C1810)),
+                      icon: const Icon(
+                        Icons.arrow_back,
+                        color: Color(0xFF2C1810),
+                      ),
                       onPressed: () => context.go('/input'),
                     ),
                     title: Text(
@@ -68,14 +71,10 @@ class ResultScreen extends StatelessWidget {
                   ),
 
                   // Risk warning
-                  SliverToBoxAdapter(
-                    child: _buildRiskWarning(),
-                  ),
+                  SliverToBoxAdapter(child: _buildRiskWarning()),
 
                   // K-Line chart
-                  SliverToBoxAdapter(
-                    child: _buildKLineSection(result),
-                  ),
+                  SliverToBoxAdapter(child: _buildKLineSection(result)),
 
                   // Analysis cards
                   SliverToBoxAdapter(
@@ -87,9 +86,7 @@ class ResultScreen extends StatelessWidget {
                     child: _buildActionAdviceSection(result.chartData),
                   ),
 
-                  const SliverToBoxAdapter(
-                    child: SizedBox(height: 32),
-                  ),
+                  const SliverToBoxAdapter(child: SizedBox(height: 32)),
                 ],
               ),
             ),
@@ -124,23 +121,73 @@ class ResultScreen extends StatelessWidget {
   }
 
   Widget _buildKLineSection(LifeDestinyResult result) {
+    final currentAge =
+        DateTime.now().year -
+        result.chartData[0].year +
+        result.chartData[0].age;
     return KLineChart(
       data: result.chartData,
       supportPressureLevels: result.analysis.supportPressureLevels ?? [],
+      currentAge: currentAge,
     );
   }
 
   Widget _buildAnalysisSection(AnalysisData analysis) {
     final dimensions = [
-      _AnalysisDimension('命理总评', analysis.summary, analysis.summaryScore, Icons.auto_awesome),
-      _AnalysisDimension('性格分析', analysis.personality, analysis.personalityScore, Icons.psychology),
-      _AnalysisDimension('事业分析', analysis.industry, analysis.industryScore, Icons.work),
-      _AnalysisDimension('风水建议', analysis.fengShui, analysis.fengShuiScore, Icons.home),
-      _AnalysisDimension('财富分析', analysis.wealth, analysis.wealthScore, Icons.attach_money),
-      _AnalysisDimension('婚姻分析', analysis.marriage, analysis.marriageScore, Icons.favorite),
-      _AnalysisDimension('健康分析', analysis.health, analysis.healthScore, Icons.health_and_safety),
-      _AnalysisDimension('六亲分析', analysis.family, analysis.familyScore, Icons.family_restroom),
-      _AnalysisDimension('币圈分析', analysis.crypto, analysis.cryptoScore, Icons.currency_bitcoin),
+      _AnalysisDimension(
+        '命理总评',
+        analysis.summary,
+        analysis.summaryScore,
+        Icons.auto_awesome,
+      ),
+      _AnalysisDimension(
+        '性格分析',
+        analysis.personality,
+        analysis.personalityScore,
+        Icons.psychology,
+      ),
+      _AnalysisDimension(
+        '事业分析',
+        analysis.industry,
+        analysis.industryScore,
+        Icons.work,
+      ),
+      _AnalysisDimension(
+        '风水建议',
+        analysis.fengShui,
+        analysis.fengShuiScore,
+        Icons.home,
+      ),
+      _AnalysisDimension(
+        '财富分析',
+        analysis.wealth,
+        analysis.wealthScore,
+        Icons.attach_money,
+      ),
+      _AnalysisDimension(
+        '婚姻分析',
+        analysis.marriage,
+        analysis.marriageScore,
+        Icons.favorite,
+      ),
+      _AnalysisDimension(
+        '健康分析',
+        analysis.health,
+        analysis.healthScore,
+        Icons.health_and_safety,
+      ),
+      _AnalysisDimension(
+        '六亲分析',
+        analysis.family,
+        analysis.familyScore,
+        Icons.family_restroom,
+      ),
+      _AnalysisDimension(
+        '币圈分析',
+        analysis.crypto,
+        analysis.cryptoScore,
+        Icons.currency_bitcoin,
+      ),
     ];
 
     return Padding(
@@ -167,8 +214,8 @@ class ResultScreen extends StatelessWidget {
     final scoreColor = dim.score >= 7
         ? const Color(0xFF16A34A)
         : dim.score >= 4
-            ? const Color(0xFFCA8A04)
-            : const Color(0xFFDC2626);
+        ? const Color(0xFFCA8A04)
+        : const Color(0xFFDC2626);
 
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
@@ -231,7 +278,11 @@ class ResultScreen extends StatelessWidget {
           const SizedBox(height: 8),
           Text(
             dim.content,
-            style: const TextStyle(fontSize: 14, color: Color(0xFF4B5563), height: 1.5),
+            style: const TextStyle(
+              fontSize: 14,
+              color: Color(0xFF4B5563),
+              height: 1.5,
+            ),
           ),
         ],
       ),
@@ -273,7 +324,9 @@ class ResultScreen extends StatelessWidget {
         color: Colors.white,
         borderRadius: BorderRadius.circular(12),
         border: Border.all(
-          color: isUp ? const Color(0xFFB22D1B).withValues(alpha: 0.3) : const Color(0xFF2F4F4F).withValues(alpha: 0.3),
+          color: isUp
+              ? const Color(0xFFB22D1B).withValues(alpha: 0.3)
+              : const Color(0xFF2F4F4F).withValues(alpha: 0.3),
         ),
       ),
       child: Column(
@@ -284,60 +337,114 @@ class ResultScreen extends StatelessWidget {
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                 decoration: BoxDecoration(
-                  color: isUp ? const Color(0xFFB22D1B) : const Color(0xFF2F4F4F),
+                  color: isUp
+                      ? const Color(0xFFB22D1B)
+                      : const Color(0xFF2F4F4F),
                   borderRadius: BorderRadius.circular(4),
                 ),
                 child: Text(
                   '${point.year} (${point.age}岁)',
-                  style: const TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.bold),
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 12,
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
               ),
               const SizedBox(width: 8),
               if (point.tenGod != null)
                 Text(
                   point.tenGod!.label,
-                  style: const TextStyle(color: Color(0xFF7C3AED), fontWeight: FontWeight.bold),
+                  style: const TextStyle(
+                    color: Color(0xFF7C3AED),
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
               const Spacer(),
               if (advice.scenario != null)
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 6,
+                    vertical: 2,
+                  ),
                   decoration: BoxDecoration(
                     color: Colors.blue.shade50,
                     borderRadius: BorderRadius.circular(4),
                   ),
-                  child: Text(advice.scenario!, style: TextStyle(fontSize: 11, color: Colors.blue.shade700)),
+                  child: Text(
+                    advice.scenario!,
+                    style: TextStyle(fontSize: 11, color: Colors.blue.shade700),
+                  ),
                 ),
             ],
           ),
           const SizedBox(height: 12),
           // Suggestions
-          const Text('建议行动', style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: Color(0xFF166534))),
+          const Text(
+            '建议行动',
+            style: TextStyle(
+              fontSize: 13,
+              fontWeight: FontWeight.bold,
+              color: Color(0xFF166534),
+            ),
+          ),
           const SizedBox(height: 4),
-          ...advice.suggestions.asMap().entries.map((entry) => Padding(
-                padding: const EdgeInsets.only(bottom: 2),
-                child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text('${entry.key + 1}. ', style: const TextStyle(fontSize: 13, color: Color(0xFF16A34A), fontWeight: FontWeight.bold)),
-                    Expanded(child: Text(entry.value, style: const TextStyle(fontSize: 13))),
-                  ],
-                ),
-              )),
+          ...advice.suggestions.asMap().entries.map(
+            (entry) => Padding(
+              padding: const EdgeInsets.only(bottom: 2),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    '${entry.key + 1}. ',
+                    style: const TextStyle(
+                      fontSize: 13,
+                      color: Color(0xFF16A34A),
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  Expanded(
+                    child: Text(
+                      entry.value,
+                      style: const TextStyle(fontSize: 13),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
           const SizedBox(height: 8),
           // Warnings
-          const Text('规避提醒', style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: Color(0xFF991B1B))),
+          const Text(
+            '规避提醒',
+            style: TextStyle(
+              fontSize: 13,
+              fontWeight: FontWeight.bold,
+              color: Color(0xFF991B1B),
+            ),
+          ),
           const SizedBox(height: 4),
-          ...advice.warnings.map((w) => Padding(
-                padding: const EdgeInsets.only(bottom: 2),
-                child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Text('  ', style: TextStyle(fontSize: 13, color: Color(0xFFDC2626), fontWeight: FontWeight.bold)),
-                    Expanded(child: Text(w, style: const TextStyle(fontSize: 13))),
-                  ],
-                ),
-              )),
+          ...advice.warnings.map(
+            (w) => Padding(
+              padding: const EdgeInsets.only(bottom: 2),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text(
+                    '  ',
+                    style: TextStyle(
+                      fontSize: 13,
+                      color: Color(0xFFDC2626),
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  Expanded(
+                    child: Text(w, style: const TextStyle(fontSize: 13)),
+                  ),
+                ],
+              ),
+            ),
+          ),
           // Basis
           if (advice.basis != null) ...[
             const SizedBox(height: 8),

@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import '../../models/k_line_point.dart';
 import '../../models/analysis_data.dart';
+import '../../services/kline_interpolation_service.dart';
+import 'chart_view_mode.dart';
 import 'k_line_painter.dart';
 import 'k_line_tooltip.dart';
 
@@ -8,12 +10,14 @@ class KLineChart extends StatefulWidget {
   final List<KLinePoint> data;
   final String? title;
   final List<SupportPressureLevel> supportPressureLevels;
+  final int currentAge;
 
   const KLineChart({
     super.key,
     required this.data,
     this.title,
     this.supportPressureLevels = const [],
+    required this.currentAge,
   });
 
   @override
@@ -23,6 +27,53 @@ class KLineChart extends StatefulWidget {
 class _KLineChartState extends State<KLineChart> {
   int? _selectedIndex;
   OverlayEntry? _tooltipOverlay;
+  ChartViewMode _viewMode = ChartViewMode.year;
+
+  // Cached interpolated data for month/day views
+  List<KLinePoint>? _cachedMonthData;
+  List<KLinePoint>? _cachedDayData;
+
+  List<KLinePoint> get _displayData {
+    switch (_viewMode) {
+      case ChartViewMode.year:
+        return widget.data;
+      case ChartViewMode.month:
+        _cachedMonthData ??= _generateInterpolatedData(ChartViewMode.month);
+        return _cachedMonthData!;
+      case ChartViewMode.day:
+        _cachedDayData ??= _generateInterpolatedData(ChartViewMode.day);
+        return _cachedDayData!;
+    }
+  }
+
+  List<KLinePoint> _generateInterpolatedData(ChartViewMode mode) {
+    final today = DateTime.now();
+    final range = mode.dateRange(today);
+    return KLineInterpolationService.interpolate(
+      anchorPoints: widget.data,
+      start: range.start,
+      end: range.end,
+    );
+  }
+
+  void _switchViewMode(ChartViewMode mode) {
+    if (mode == _viewMode) return;
+    _removeTooltip();
+    setState(() {
+      _viewMode = mode;
+      _selectedIndex = null;
+    });
+  }
+
+  @override
+  void didUpdateWidget(KLineChart oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.data != widget.data) {
+      // Invalidate cache when source data changes
+      _cachedMonthData = null;
+      _cachedDayData = null;
+    }
+  }
 
   @override
   void dispose() {
@@ -37,11 +88,12 @@ class _KLineChartState extends State<KLineChart> {
 
   void _showTooltip(int index, Offset globalPosition) {
     _removeTooltip();
-    if (index < 0 || index >= widget.data.length) return;
+    final data = _displayData;
+    if (index < 0 || index >= data.length) return;
 
     final overlay = Overlay.of(context);
     final screenSize = MediaQuery.of(context).size;
-    final point = widget.data[index];
+    final point = data[index];
 
     _tooltipOverlay = OverlayEntry(
       builder: (context) {
@@ -72,7 +124,10 @@ class _KLineChartState extends State<KLineChart> {
             Positioned(
               left: left,
               top: top,
-              child: KLineTooltip(point: point),
+              child: KLineTooltip(
+                point: point,
+                viewMode: _viewMode,
+              ),
             ),
           ],
         );
@@ -83,18 +138,19 @@ class _KLineChartState extends State<KLineChart> {
   }
 
   int? _hitTestCandle(Offset localPosition, Size size) {
-    if (widget.data.isEmpty) return null;
+    final data = _displayData;
+    if (data.isEmpty) return null;
 
     const chartLeft = KLinePainter.paddingLeft;
     const chartRight = -KLinePainter.paddingRight; // will add to size.width
     final chartWidth = size.width + chartRight - chartLeft;
-    final candleSpacing = chartWidth / widget.data.length;
+    final candleSpacing = chartWidth / data.length;
 
     final x = localPosition.dx - chartLeft;
     if (x < 0) return null;
 
     final index = (x / candleSpacing).floor();
-    if (index < 0 || index >= widget.data.length) return null;
+    if (index < 0 || index >= data.length) return null;
 
     return index;
   }
@@ -108,6 +164,9 @@ class _KLineChartState extends State<KLineChart> {
         child: const Text('无数据', style: TextStyle(color: Colors.grey)),
       );
     }
+
+    final today = DateTime.now();
+    final displayData = _displayData;
 
     return Container(
       margin: const EdgeInsets.all(16),
@@ -127,13 +186,15 @@ class _KLineChartState extends State<KLineChart> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Title
+          // Chart header with view mode switcher
+          _buildChartHeader(today),
+          // Dynamic title
           Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
             child: Text(
-              widget.title ?? '人生流年大运K线图',
+              _viewMode.formatSubtitle(today, widget.currentAge),
               style: const TextStyle(
-                fontSize: 16,
+                fontSize: 14,
                 fontWeight: FontWeight.bold,
                 color: Color(0xFF1F2937),
               ),
@@ -145,11 +206,11 @@ class _KLineChartState extends State<KLineChart> {
             child: GestureDetector(
               onTapUp: (details) {
                 final box = context.findRenderObject() as RenderBox;
-                // Adjust for container padding and title
+                // Adjust for container padding and header
                 final localPos = box.globalToLocal(details.globalPosition);
                 final chartLocalPos = Offset(
                   localPos.dx - 8, // container padding
-                  localPos.dy - 36, // approx title height + padding
+                  localPos.dy - 80, // header + subtitle + padding
                 );
                 final size = Size(box.size.width - 16, 300);
                 final idx = _hitTestCandle(chartLocalPos, size);
@@ -163,11 +224,118 @@ class _KLineChartState extends State<KLineChart> {
               child: CustomPaint(
                 size: Size.infinite,
                 painter: KLinePainter(
-                  data: widget.data,
+                  data: displayData,
                   supportPressureLevels: widget.supportPressureLevels,
                   selectedIndex: _selectedIndex,
+                  viewMode: _viewMode,
                 ),
               ),
+            ),
+          ),
+          // Chart footer (only for month/day views)
+          if (_viewMode != ChartViewMode.year)
+            _buildChartFooter(displayData),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildChartHeader(DateTime today) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              const Text(
+                '运势时间轴',
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                  color: Color(0xFF1F2937),
+                ),
+              ),
+              Row(
+                children: ChartViewMode.values.map((mode) {
+                  final isSelected = mode == _viewMode;
+                  return Padding(
+                    padding: const EdgeInsets.only(left: 4),
+                    child: GestureDetector(
+                      onTap: () => _switchViewMode(mode),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 10,
+                          vertical: 4,
+                        ),
+                        decoration: BoxDecoration(
+                          color: isSelected
+                              ? const Color(0xFFB22D1B)
+                              : Colors.transparent,
+                          borderRadius: BorderRadius.circular(4),
+                          border: Border.all(
+                            color: isSelected
+                                ? const Color(0xFFB22D1B)
+                                : const Color(0xFF9CA3AF),
+                          ),
+                        ),
+                        child: Text(
+                          mode.label,
+                          style: TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w500,
+                            color: isSelected
+                                ? Colors.white
+                                : const Color(0xFF6B7280),
+                          ),
+                        ),
+                      ),
+                    ),
+                  );
+                }).toList(),
+              ),
+            ],
+          ),
+          const SizedBox(height: 2),
+          Text(
+            '当前虚岁: ${widget.currentAge}岁 | 今日: ${today.year}/${today.month}/${today.day}',
+            style: const TextStyle(
+              fontSize: 11,
+              color: Color(0xFF6B7280),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildChartFooter(List<KLinePoint> displayData) {
+    // Calculate Y-axis range for display
+    final allValues = displayData.expand((d) => [d.low, d.high]).toList();
+    final dataMin = allValues.reduce((a, b) => a < b ? a : b);
+    final dataMax = allValues.reduce((a, b) => a > b ? a : b);
+    final padding = (dataMax - dataMin) * 0.15;
+    final yMin = (dataMin - padding).clamp(0.0, 10.0);
+    final yMax = (dataMax + padding).clamp(0.0, 10.0);
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            '数据基于年度运势插值计算，仅供参考',
+            style: TextStyle(
+              fontSize: 10,
+              color: Colors.grey.shade600,
+            ),
+          ),
+          Text(
+            'Y轴已动态调整至 ${yMin.toStringAsFixed(1)}-${yMax.toStringAsFixed(1)} 范围以更好展示运势波动',
+            style: TextStyle(
+              fontSize: 10,
+              color: Colors.grey.shade600,
             ),
           ),
         ],

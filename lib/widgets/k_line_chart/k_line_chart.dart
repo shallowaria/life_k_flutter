@@ -14,7 +14,7 @@ class KLineChart extends StatefulWidget {
   final Map<String, ActionAdvice>? dailyAdvice;
   final bool isLoadingDailyAdvice;
   final void Function(ChartViewMode mode, List<KLinePoint> interpolatedPoints)?
-      onViewModeChanged;
+  onViewModeChanged;
 
   const KLineChart({
     super.key,
@@ -107,10 +107,21 @@ class _KLineChartState extends State<KLineChart> {
   @override
   void didUpdateWidget(KLineChart oldWidget) {
     super.didUpdateWidget(oldWidget);
+
     if (oldWidget.data != widget.data) {
-      // Invalidate cache when source data changes
       _cachedMonthData = null;
       _cachedDayData = null;
+    }
+
+    if (oldWidget.dailyAdvice != widget.dailyAdvice ||
+        oldWidget.isLoadingDailyAdvice != widget.isLoadingDailyAdvice) {
+      if (_selectedIndex != null && _tooltipOverlay != null) {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (mounted && _tooltipOverlay != null) {
+            _tooltipOverlay!.markNeedsBuild();
+          }
+        });
+      }
     }
   }
 
@@ -132,11 +143,11 @@ class _KLineChartState extends State<KLineChart> {
 
     final overlay = Overlay.of(context);
     final screenSize = MediaQuery.of(context).size;
-    final point = data[index];
 
     _tooltipOverlay = OverlayEntry(
       builder: (context) {
         // Position tooltip to the left or right of the tap
+        final point = _displayData[index]; // 🔥 每次build都重新取最新数据
         const tooltipWidth = 280.0;
         const tooltipMaxHeight = 480.0;
         double left = globalPosition.dx + 16;
@@ -273,8 +284,7 @@ class _KLineChartState extends State<KLineChart> {
             ),
           ),
           // Chart footer (only for month/day views)
-          if (_viewMode != ChartViewMode.year)
-            _buildChartFooter(displayData),
+          if (_viewMode != ChartViewMode.year) _buildChartFooter(displayData),
         ],
       ),
     );
@@ -340,10 +350,7 @@ class _KLineChartState extends State<KLineChart> {
           const SizedBox(height: 2),
           Text(
             '当前虚岁: ${widget.currentAge}岁 | 今日: ${today.year}/${today.month}/${today.day}',
-            style: const TextStyle(
-              fontSize: 11,
-              color: Color(0xFF6B7280),
-            ),
+            style: const TextStyle(fontSize: 11, color: Color(0xFF6B7280)),
           ),
         ],
       ),
@@ -366,17 +373,11 @@ class _KLineChartState extends State<KLineChart> {
         children: [
           Text(
             '数据基于年度运势插值计算，仅供参考',
-            style: TextStyle(
-              fontSize: 10,
-              color: Colors.grey.shade600,
-            ),
+            style: TextStyle(fontSize: 10, color: Colors.grey.shade600),
           ),
           Text(
             'Y轴已动态调整至 ${yMin.toStringAsFixed(1)}-${yMax.toStringAsFixed(1)} 范围以更好展示运势波动',
-            style: TextStyle(
-              fontSize: 10,
-              color: Colors.grey.shade600,
-            ),
+            style: TextStyle(fontSize: 10, color: Colors.grey.shade600),
           ),
         ],
       ),

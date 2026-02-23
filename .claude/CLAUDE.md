@@ -52,15 +52,15 @@ InputScreen → BaziCalculator.calculate() → UserInput model
 
 ### Key Layers
 
-| Layer | Location | Purpose |
-|-------|----------|---------|
-| Models | `lib/models/` | `KLinePoint` (OHLC + score + TenGod + energy + advice), `AnalysisData` (9 dimensions), `UserInput` (birth info + 4 pillars), `LifeDestinyResult` (wrapper) |
-| Services | `lib/services/` | `BaziCalculator` — static Four Pillars computation via `lunar` library; `DestinyApiService` — Anthropic API with 3 retries + exponential backoff (30s connect / 120s receive timeout); `StorageService` — SharedPreferences persistence |
-| BLoCs | `lib/blocs/` | `user_input/` and `destiny_result/` each with event/state/bloc files |
-| Screens | `lib/screens/` | `InputScreen` (birth form + ShiChen grid + live pillar preview), `ResultScreen` (chart + 9D analysis cards + action advice) |
-| Widgets | `lib/widgets/k_line_chart/` | `KLineChart` (interactive tap + tooltip overlay), `KLinePainter` (CustomPainter with diamond candles, MK10 line, support/pressure levels, Da Yun separators), `KLineTooltip` (detailed popup) |
-| Constants | `lib/constants/` | `shi_chen.dart` (12 traditional double-hour periods with conversion functions), `bazi_prompt.dart` (AI system prompt defining analysis rules) |
-| Utils | `lib/utils/` | `score_normalizer.dart` (clamp 0-10), `validators.dart` (chart data + BaZi input validation) |
+| Layer     | Location                    | Purpose                                                                                                                                                                                                                                 |
+| --------- | --------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Models    | `lib/models/`               | `KLinePoint` (OHLC + score + TenGod + energy + advice), `AnalysisData` (9 dimensions), `UserInput` (birth info + 4 pillars), `LifeDestinyResult` (wrapper)                                                                              |
+| Services  | `lib/services/`             | `BaziCalculator` — static Four Pillars computation via `lunar` library; `DestinyApiService` — Anthropic API with 3 retries + exponential backoff (30s connect / 120s receive timeout); `StorageService` — SharedPreferences persistence |
+| BLoCs     | `lib/blocs/`                | `user_input/` and `destiny_result/` each with event/state/bloc files                                                                                                                                                                    |
+| Screens   | `lib/screens/`              | `InputScreen` (birth form + ShiChen grid + live pillar preview), `ResultScreen` (chart + 9D analysis cards + action advice)                                                                                                             |
+| Widgets   | `lib/widgets/k_line_chart/` | `KLineChart` (interactive tap + tooltip overlay), `KLinePainter` (CustomPainter with diamond candles, MK10 line, support/pressure levels, Da Yun separators), `KLineTooltip` (detailed popup)                                           |
+| Constants | `lib/constants/`            | `shi_chen.dart` (12 traditional double-hour periods with conversion functions), `bazi_prompt.dart` (AI system prompt defining analysis rules)                                                                                           |
+| Utils     | `lib/utils/`                | `score_normalizer.dart` (clamp 0-10), `validators.dart` (chart data + BaZi input validation)                                                                                                                                            |
 
 ### Routing
 
@@ -90,3 +90,4 @@ Dart SDK `^3.10.7`. Linting via `package:flutter_lints/flutter.yaml`.
 ## Project Rules
 
 @.claude/rules_4k.md
+@.claude/ARCHITECTURE.md

@@ -3,7 +3,7 @@ enum ChartViewMode {
   /// 30-year annual K-line (default)
   year,
 
-  /// Current date +/- 1 month daily K-line
+  /// Current date +/- 15 days daily K-line
   month,
 
   /// Current date +/- 1 week daily K-line
@@ -28,8 +28,8 @@ enum ChartViewMode {
         return (start: today, end: today);
       case ChartViewMode.month:
         return (
-          start: DateTime(today.year, today.month - 1, today.day),
-          end: DateTime(today.year, today.month + 1, today.day),
+          start: today.subtract(const Duration(days: 15)),
+          end: today.add(const Duration(days: 15)),
         );
       case ChartViewMode.day:
         return (

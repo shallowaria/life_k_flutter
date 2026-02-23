@@ -3,13 +3,94 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import '../blocs/destiny_result/destiny_result_bloc.dart';
 import '../blocs/destiny_result/destiny_result_state.dart';
+import '../blocs/user_input/user_input_bloc.dart';
+import '../blocs/user_input/user_input_state.dart';
 import '../models/life_destiny_result.dart';
 import '../models/k_line_point.dart';
 import '../models/analysis_data.dart';
 import '../widgets/k_line_chart/k_line_chart.dart';
+import '../widgets/k_line_chart/chart_view_mode.dart';
 
-class ResultScreen extends StatelessWidget {
+class ResultScreen extends StatefulWidget {
   const ResultScreen({super.key});
+
+  @override
+  State<ResultScreen> createState() => _ResultScreenState();
+}
+
+class _ResultScreenState extends State<ResultScreen> {
+  Map<String, ActionAdvice>? _monthAdvice;
+  Map<String, ActionAdvice>? _dayAdvice;
+  bool _isLoadingMonthAdvice = false;
+  bool _isLoadingDayAdvice = false;
+  ChartViewMode _currentMode = ChartViewMode.year;
+
+  Map<String, ActionAdvice>? get _currentAdvice {
+    if (_currentMode == ChartViewMode.month) return _monthAdvice;
+    if (_currentMode == ChartViewMode.day) return _dayAdvice;
+    return null;
+  }
+
+  bool get _isLoadingAdvice {
+    if (_currentMode == ChartViewMode.month) return _isLoadingMonthAdvice;
+    if (_currentMode == ChartViewMode.day) return _isLoadingDayAdvice;
+    return false;
+  }
+
+  void _onViewModeChanged(
+      ChartViewMode mode, List<KLinePoint> points) {
+    setState(() => _currentMode = mode);
+    if (mode == ChartViewMode.month &&
+        _monthAdvice == null &&
+        !_isLoadingMonthAdvice) {
+      _fetchAdvice(mode, points);
+    } else if (mode == ChartViewMode.day &&
+        _dayAdvice == null &&
+        !_isLoadingDayAdvice) {
+      _fetchAdvice(mode, points);
+    }
+  }
+
+  Future<void> _fetchAdvice(
+      ChartViewMode mode, List<KLinePoint> points) async {
+    final userInputState = context.read<UserInputBloc>().state;
+    if (userInputState is! UserInputReady) return;
+    final userInput = userInputState.input;
+
+    final service = context.read<DestinyResultBloc>().apiService;
+
+    setState(() {
+      if (mode == ChartViewMode.month) {
+        _isLoadingMonthAdvice = true;
+      } else {
+        _isLoadingDayAdvice = true;
+      }
+    });
+
+    try {
+      final advice =
+          await service.generateDailyAdvice(input: userInput, points: points);
+      if (!mounted) return;
+      setState(() {
+        if (mode == ChartViewMode.month) {
+          _monthAdvice = advice;
+          _isLoadingMonthAdvice = false;
+        } else {
+          _dayAdvice = advice;
+          _isLoadingDayAdvice = false;
+        }
+      });
+    } catch (_) {
+      if (!mounted) return;
+      setState(() {
+        if (mode == ChartViewMode.month) {
+          _isLoadingMonthAdvice = false;
+        } else {
+          _isLoadingDayAdvice = false;
+        }
+      });
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -129,6 +210,9 @@ class ResultScreen extends StatelessWidget {
       data: result.chartData,
       supportPressureLevels: result.analysis.supportPressureLevels ?? [],
       currentAge: currentAge,
+      dailyAdvice: _currentAdvice,
+      isLoadingDailyAdvice: _isLoadingAdvice,
+      onViewModeChanged: _onViewModeChanged,
     );
   }
 

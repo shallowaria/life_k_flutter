@@ -9,6 +9,7 @@ class DestinyResultBloc
   final DestinyApiService _apiService;
   final StorageService _storageService;
 
+  DestinyApiService get apiService => _apiService;
   DestinyResultBloc({
     required DestinyApiService apiService,
     required StorageService storageService,

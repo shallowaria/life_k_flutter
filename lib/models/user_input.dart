@@ -1,3 +1,5 @@
+import 'life_event.dart';
+
 /// Gender type
 enum Gender {
   male('Male'),
@@ -20,6 +22,7 @@ class UserInput {
   final String dayPillar;
   final String hourPillar;
   final String startAge;
+  final List<LifeEvent>? lifeEvents;
 
   const UserInput({
     this.name,
@@ -31,6 +34,7 @@ class UserInput {
     required this.dayPillar,
     required this.hourPillar,
     required this.startAge,
+    this.lifeEvents,
   });
 
   factory UserInput.fromJson(Map<String, dynamic> json) {
@@ -44,6 +48,9 @@ class UserInput {
       dayPillar: json['dayPillar'] as String,
       hourPillar: json['hourPillar'] as String,
       startAge: json['startAge'] as String,
+      lifeEvents: (json['lifeEvents'] as List<dynamic>?)
+          ?.map((e) => LifeEvent.fromJson(e as Map<String, dynamic>))
+          .toList(),
     );
   }
 
@@ -57,6 +64,8 @@ class UserInput {
         'dayPillar': dayPillar,
         'hourPillar': hourPillar,
         'startAge': startAge,
+        if (lifeEvents != null && lifeEvents!.isNotEmpty)
+          'lifeEvents': lifeEvents!.map((e) => e.toJson()).toList(),
       };
 
   UserInput copyWith({
@@ -69,6 +78,7 @@ class UserInput {
     String? dayPillar,
     String? hourPillar,
     String? startAge,
+    List<LifeEvent>? lifeEvents,
   }) {
     return UserInput(
       name: name ?? this.name,
@@ -80,6 +90,7 @@ class UserInput {
       dayPillar: dayPillar ?? this.dayPillar,
       hourPillar: hourPillar ?? this.hourPillar,
       startAge: startAge ?? this.startAge,
+      lifeEvents: lifeEvents ?? this.lifeEvents,
     );
   }
 }

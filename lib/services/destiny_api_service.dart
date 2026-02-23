@@ -38,8 +38,14 @@ class DestinyApiService {
 - 四柱: ${input.yearPillar}年 ${input.monthPillar}月 ${input.dayPillar}日 ${input.hourPillar}时
 - 起运年龄: ${input.startAge}岁（虚岁）
 - 大运方向: ${direction.text}
-
+${_buildLifeEventsSection(input)}
 请严格按照JSON格式输出，不要添加任何额外的文字说明。''';
+  }
+
+  String _buildLifeEventsSection(UserInput input) {
+    if (input.lifeEvents == null || input.lifeEvents!.isEmpty) return '';
+    final lines = input.lifeEvents!.map((e) => '- ${e.toPromptString()}').join('\n');
+    return '\n## 用户过往人生大事（请据此校准运势模型）\n$lines\n';
   }
 
   ({bool isForward, String text}) _getDaYunDirection(
@@ -218,5 +224,78 @@ class DestinyApiService {
     }
 
     return AnalysisData.fromJson(normalized);
+  }
+
+  /// Fetch per-day action advice for a list of interpolated KLinePoints.
+  /// Returns a map keyed by "yyyy-M-d" matching point.year + point.ganZhi.
+  Future<Map<String, ActionAdvice>> generateDailyAdvice({
+    required UserInput input,
+    required List<KLinePoint> points,
+  }) async {
+    if (points.isEmpty) return {};
+    final userMsg = buildDailyAdviceUserMessage(input, points);
+    const maxRetries = 3;
+    Exception? lastError;
+
+    for (var attempt = 1; attempt <= maxRetries; attempt++) {
+      try {
+        final response = await _dio.post(
+          '$baseUrl/v1/messages',
+          options: Options(
+            headers: {
+              'Content-Type': 'application/json',
+              'anthropic-version': '2023-06-01',
+              'x-api-key': authToken,
+            },
+            validateStatus: (status) => status != null,
+          ),
+          data: {
+            'model': model,
+            'max_tokens': 4000,
+            'temperature': 0.6,
+            'system': dailyAdviceSystemInstruction,
+            'messages': [
+              {'role': 'user', 'content': userMsg},
+            ],
+          },
+        );
+
+        final status = response.statusCode ?? 0;
+        if (status >= 400 && status < 500) {
+          throw Exception('API 错误 ($status): ${response.data}');
+        }
+        if (status != 200) {
+          lastError = Exception('API 服务端错误 ($status): ${response.data}');
+          if (attempt < maxRetries) {
+            await Future.delayed(Duration(seconds: attempt * 5));
+          }
+          continue;
+        }
+
+        final content = (response.data['content'] as List).firstWhere(
+          (b) => b['type'] == 'text',
+          orElse: () => throw Exception('AI 返回格式错误：未找到文本内容'),
+        );
+        var aiText = (content['text'] as String).trim();
+        aiText = aiText
+            .replaceAll(RegExp(r'```json\s*'), '')
+            .replaceAll(RegExp(r'```\s*'), '')
+            .trim();
+
+        final json = jsonDecode(aiText) as Map<String, dynamic>;
+        final list = json['dailyAdvice'] as List;
+        return {
+          for (final item in list)
+            item['date'] as String:
+                ActionAdvice.fromJson(item as Map<String, dynamic>),
+        };
+      } on Exception catch (e) {
+        lastError = e;
+        if (attempt < maxRetries) {
+          await Future.delayed(Duration(seconds: attempt * 5));
+        }
+      }
+    }
+    throw lastError ?? Exception('所有重试均失败');
   }
 }

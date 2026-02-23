@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import '../models/user_input.dart';
+import '../models/life_event.dart';
 import '../services/bazi_calculator.dart';
 import '../constants/shi_chen.dart';
 import '../blocs/user_input/user_input_bloc.dart';
@@ -24,6 +25,7 @@ class _InputScreenState extends State<InputScreen> {
   String _shiChen = '子时';
   BaziCalculationResult? _calculatedData;
   String? _error;
+  final List<LifeEvent> _lifeEvents = [];
 
   @override
   void dispose() {
@@ -101,6 +103,9 @@ class _InputScreenState extends State<InputScreen> {
       dayPillar: _calculatedData!.dayPillar,
       hourPillar: _calculatedData!.hourPillar,
       startAge: _calculatedData!.startAge,
+      lifeEvents: _lifeEvents.isNotEmpty
+          ? List.unmodifiable(_lifeEvents)
+          : null,
     );
 
     context.read<UserInputBloc>().add(UserInputUpdated(userInput));
@@ -154,16 +159,17 @@ class _InputScreenState extends State<InputScreen> {
               height: 64,
               child: CircularProgressIndicator(
                 strokeWidth: 4,
-                valueColor:
-                    AlwaysStoppedAnimation(Theme.of(context).colorScheme.primary),
+                valueColor: AlwaysStoppedAnimation(
+                  Theme.of(context).colorScheme.primary,
+                ),
               ),
             ),
             const SizedBox(height: 24),
             Text(
               '正在生成您的人生 K 线图...',
-              style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                    fontWeight: FontWeight.bold,
-                  ),
+              style: Theme.of(
+                context,
+              ).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 8),
             const Text(
@@ -205,27 +211,36 @@ class _InputScreenState extends State<InputScreen> {
               ),
               child: Column(
                 children: [
-                  Text('生成失败',
-                      style: TextStyle(
-                          fontWeight: FontWeight.bold,
-                          color: Colors.red.shade900)),
+                  Text(
+                    '生成失败',
+                    style: TextStyle(
+                      fontWeight: FontWeight.bold,
+                      color: Colors.red.shade900,
+                    ),
+                  ),
                   const SizedBox(height: 8),
-                  Text(state.error,
-                      style: TextStyle(color: Colors.red.shade700)),
+                  Text(
+                    state.error,
+                    style: TextStyle(color: Colors.red.shade700),
+                  ),
                   if (state.suggestion != null) ...[
                     const SizedBox(height: 8),
-                    Text(state.suggestion!,
-                        style: TextStyle(
-                            fontSize: 12, color: Colors.red.shade600)),
+                    Text(
+                      state.suggestion!,
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: Colors.red.shade600,
+                      ),
+                    ),
                   ],
                 ],
               ),
             ),
             const SizedBox(height: 16),
             ElevatedButton(
-              onPressed: () => context
-                  .read<DestinyResultBloc>()
-                  .add(const DestinyResultCleared()),
+              onPressed: () => context.read<DestinyResultBloc>().add(
+                const DestinyResultCleared(),
+              ),
               style: ElevatedButton.styleFrom(
                 backgroundColor: const Color(0xFF8B3A3A),
                 foregroundColor: Colors.white,
@@ -245,14 +260,18 @@ class _InputScreenState extends State<InputScreen> {
         children: [
           const SizedBox(height: 24),
           // Title
-          Text('人生K线图',
-              style: Theme.of(context).textTheme.headlineLarge?.copyWith(
-                    fontWeight: FontWeight.bold,
-                    color: const Color(0xFF1F2937),
-                  )),
+          Text(
+            '人生K线图',
+            style: Theme.of(context).textTheme.headlineLarge?.copyWith(
+              fontWeight: FontWeight.bold,
+              color: const Color(0xFF1F2937),
+            ),
+          ),
           const SizedBox(height: 8),
-          const Text('用 AI 和八字命理绘制您的人生运势曲线',
-              style: TextStyle(fontSize: 16, color: Colors.grey)),
+          const Text(
+            '用 AI 和八字命理绘制您的人生运势曲线',
+            style: TextStyle(fontSize: 16, color: Colors.grey),
+          ),
           const SizedBox(height: 32),
 
           // Form card
@@ -261,8 +280,7 @@ class _InputScreenState extends State<InputScreen> {
             decoration: BoxDecoration(
               color: const Color(0xFFF5F0E8),
               borderRadius: BorderRadius.circular(16),
-              border: Border.all(
-                  color: const Color(0xFF8B7E66), width: 3),
+              border: Border.all(color: const Color(0xFF8B7E66), width: 3),
             ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -288,7 +306,8 @@ class _InputScreenState extends State<InputScreen> {
                   decoration: InputDecoration(
                     hintText: '请输入姓名',
                     border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(8)),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
                     filled: true,
                     fillColor: Colors.white,
                   ),
@@ -326,7 +345,9 @@ class _InputScreenState extends State<InputScreen> {
                   onTap: _onDatePicked,
                   child: Container(
                     padding: const EdgeInsets.symmetric(
-                        horizontal: 16, vertical: 14),
+                      horizontal: 16,
+                      vertical: 14,
+                    ),
                     decoration: BoxDecoration(
                       color: Colors.white,
                       borderRadius: BorderRadius.circular(8),
@@ -360,8 +381,7 @@ class _InputScreenState extends State<InputScreen> {
                 GridView.builder(
                   shrinkWrap: true,
                   physics: const NeverScrollableScrollPhysics(),
-                  gridDelegate:
-                      const SliverGridDelegateWithFixedCrossAxisCount(
+                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
                     crossAxisCount: 4,
                     childAspectRatio: 1.2,
                     crossAxisSpacing: 8,
@@ -437,21 +457,20 @@ class _InputScreenState extends State<InputScreen> {
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                     children: [
-                      _buildPillarDisplay(
-                          '年柱', _calculatedData!.yearPillar),
-                      _buildPillarDisplay(
-                          '月柱', _calculatedData!.monthPillar),
-                      _buildPillarDisplay(
-                          '日柱', _calculatedData!.dayPillar),
-                      _buildPillarDisplay(
-                          '时柱', _calculatedData!.hourPillar),
+                      _buildPillarDisplay('年柱', _calculatedData!.yearPillar),
+                      _buildPillarDisplay('月柱', _calculatedData!.monthPillar),
+                      _buildPillarDisplay('日柱', _calculatedData!.dayPillar),
+                      _buildPillarDisplay('时柱', _calculatedData!.hourPillar),
                     ],
                   ),
                   const SizedBox(height: 16),
                   Center(
                     child: RichText(
                       text: TextSpan(
-                        style: const TextStyle(fontSize: 16, color: Color(0xFF5C7A6B)),
+                        style: const TextStyle(
+                          fontSize: 16,
+                          color: Color(0xFF5C7A6B),
+                        ),
                         children: [
                           const TextSpan(text: '起运年龄  '),
                           TextSpan(
@@ -466,14 +485,20 @@ class _InputScreenState extends State<InputScreen> {
                       ),
                     ),
                   ),
+                  const SizedBox(height: 24),
+                  const Divider(),
+                  const SizedBox(height: 16),
+                  _buildLifeEventsSection(),
                 ],
 
                 // Error
                 if (_error != null) ...[
                   const SizedBox(height: 12),
                   Center(
-                    child: Text(_error!,
-                        style: const TextStyle(color: Colors.red)),
+                    child: Text(
+                      _error!,
+                      style: const TextStyle(color: Colors.red),
+                    ),
                   ),
                 ],
 
@@ -496,7 +521,9 @@ class _InputScreenState extends State<InputScreen> {
                     child: Text(
                       _calculatedData != null ? '点击以生成K线图' : '请先完善信息',
                       style: const TextStyle(
-                          fontSize: 18, fontWeight: FontWeight.bold),
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
                   ),
                 ),
@@ -567,8 +594,10 @@ class _InputScreenState extends State<InputScreen> {
   Widget _buildPillarDisplay(String label, String value) {
     return Column(
       children: [
-        Text(label,
-            style: const TextStyle(fontSize: 12, color: Color(0xFF8B7E66))),
+        Text(
+          label,
+          style: const TextStyle(fontSize: 12, color: Color(0xFF8B7E66)),
+        ),
         const SizedBox(height: 4),
         Column(
           children: value.split('').map((char) {
@@ -583,6 +612,445 @@ class _InputScreenState extends State<InputScreen> {
           }).toList(),
         ),
       ],
+    );
+  }
+
+  Widget _buildLifeEventsSection() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            const Center(
+              child: Text(
+                '— 过往人生大事（可选）—',
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                  color: Color(0xFF2F4545),
+                ),
+              ),
+            ),
+            TextButton.icon(
+              onPressed: _showAddEventSheet,
+              icon: const Icon(Icons.add, size: 18, color: Color(0xFF8B3A3A)),
+              label: const Text(
+                '添加事件',
+                style: TextStyle(color: Color(0xFF8B3A3A)),
+              ),
+            ),
+          ],
+        ),
+        if (_lifeEvents.isNotEmpty) ...[
+          const SizedBox(height: 8),
+          ..._lifeEvents.asMap().entries.map((entry) {
+            final i = entry.key;
+            final event = entry.value;
+            final isSmooth = event.outcome == EventOutcome.smooth;
+            return Container(
+              margin: const EdgeInsets.only(bottom: 8),
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(color: const Color(0xFFC2BBA8)),
+              ),
+              child: Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 6,
+                      vertical: 2,
+                    ),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF8B3A3A).withValues(alpha: 0.1),
+                      borderRadius: BorderRadius.circular(4),
+                    ),
+                    child: Text(
+                      event.type.label,
+                      style: const TextStyle(
+                        fontSize: 12,
+                        color: Color(0xFF8B3A3A),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      '${event.year}年${event.month != null ? '${event.month!.padLeft(2, '0')}月' : ''}  ${event.description}',
+                      style: const TextStyle(fontSize: 14),
+                    ),
+                  ),
+                  const SizedBox(width: 4),
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 6,
+                      vertical: 2,
+                    ),
+                    decoration: BoxDecoration(
+                      color: isSmooth
+                          ? Colors.green.shade50
+                          : Colors.orange.shade50,
+                      borderRadius: BorderRadius.circular(4),
+                    ),
+                    child: Text(
+                      event.outcome.label,
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: isSmooth
+                            ? Colors.green.shade700
+                            : Colors.orange.shade700,
+                      ),
+                    ),
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.close, size: 18, color: Colors.grey),
+                    padding: EdgeInsets.zero,
+                    constraints: const BoxConstraints(),
+                    onPressed: () {
+                      setState(() => _lifeEvents.removeAt(i));
+                    },
+                  ),
+                ],
+              ),
+            );
+          }),
+        ] else ...[
+          const SizedBox(height: 4),
+          const Text(
+            '添加您的重要人生节点，帮助 AI 校准运势预测',
+            style: TextStyle(fontSize: 13, color: Colors.grey),
+          ),
+        ],
+      ],
+    );
+  }
+
+  void _showAddEventSheet() {
+    // Local state for the sheet
+    var granularity = 0; // 0=年, 1=年月, 2=年月日
+    final yearCtrl = TextEditingController();
+    final descCtrl = TextEditingController();
+    var selectedMonth = 1;
+    var selectedDay = 1;
+    var selectedType = EventType.career;
+    var selectedOutcome = EventOutcome.smooth;
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: const Color(0xFFF5F0E8),
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setSheetState) {
+          return Padding(
+            padding: EdgeInsets.only(
+              left: 20,
+              right: 20,
+              top: 20,
+              bottom: MediaQuery.of(ctx).viewInsets.bottom + 24,
+            ),
+            child: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Center(
+                    child: Text(
+                      '添加人生大事',
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                        color: Color(0xFF4A3B32),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 20),
+
+                  // Time granularity
+                  const Text(
+                    '时间粒度',
+                    style: TextStyle(
+                      fontWeight: FontWeight.bold,
+                      color: Color(0xFF4A3B32),
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Row(
+                    children: [
+                      _sheetToggle(
+                        '年',
+                        granularity == 0,
+                        () => setSheetState(() => granularity = 0),
+                      ),
+                      const SizedBox(width: 8),
+                      _sheetToggle(
+                        '年月',
+                        granularity == 1,
+                        () => setSheetState(() => granularity = 1),
+                      ),
+                      const SizedBox(width: 8),
+                      _sheetToggle(
+                        '年月日',
+                        granularity == 2,
+                        () => setSheetState(() => granularity = 2),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 16),
+
+                  // Year
+                  const Text(
+                    '年份 *',
+                    style: TextStyle(
+                      fontWeight: FontWeight.bold,
+                      color: Color(0xFF4A3B32),
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  TextField(
+                    controller: yearCtrl,
+                    keyboardType: TextInputType.number,
+                    decoration: InputDecoration(
+                      hintText: '如 2026',
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      filled: true,
+                      fillColor: Colors.white,
+                      contentPadding: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 10,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+
+                  // Month
+                  if (granularity >= 1) ...[
+                    const Text(
+                      '月份',
+                      style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        color: Color(0xFF4A3B32),
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    DropdownButtonFormField<int>(
+                      initialValue: selectedMonth,
+                      decoration: InputDecoration(
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        filled: true,
+                        fillColor: Colors.white,
+                        contentPadding: const EdgeInsets.symmetric(
+                          horizontal: 12,
+                          vertical: 10,
+                        ),
+                      ),
+                      items: List.generate(
+                        12,
+                        (i) => DropdownMenuItem(
+                          value: i + 1,
+                          child: Text('${i + 1} 月'),
+                        ),
+                      ),
+                      onChanged: (v) => setSheetState(() => selectedMonth = v!),
+                    ),
+                    const SizedBox(height: 16),
+                  ],
+
+                  // Day
+                  if (granularity >= 2) ...[
+                    const Text(
+                      '日期',
+                      style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        color: Color(0xFF4A3B32),
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    DropdownButtonFormField<int>(
+                      initialValue: selectedDay,
+                      decoration: InputDecoration(
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        filled: true,
+                        fillColor: Colors.white,
+                        contentPadding: const EdgeInsets.symmetric(
+                          horizontal: 12,
+                          vertical: 10,
+                        ),
+                      ),
+                      items: List.generate(
+                        31,
+                        (i) => DropdownMenuItem(
+                          value: i + 1,
+                          child: Text('${i + 1} 日'),
+                        ),
+                      ),
+                      onChanged: (v) => setSheetState(() => selectedDay = v!),
+                    ),
+                    const SizedBox(height: 16),
+                  ],
+
+                  // Description
+                  const Text(
+                    '事件描述 *',
+                    style: TextStyle(
+                      fontWeight: FontWeight.bold,
+                      color: Color(0xFF4A3B32),
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  TextField(
+                    controller: descCtrl,
+                    decoration: InputDecoration(
+                      hintText: '如：跳槽、结婚、创业',
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      filled: true,
+                      fillColor: Colors.white,
+                      contentPadding: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 10,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+
+                  // Event type
+                  const Text(
+                    '事件类型',
+                    style: TextStyle(
+                      fontWeight: FontWeight.bold,
+                      color: Color(0xFF4A3B32),
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Row(
+                    children: EventType.values
+                        .map(
+                          (t) => Padding(
+                            padding: const EdgeInsets.only(right: 8),
+                            child: _sheetToggle(
+                              t.label,
+                              selectedType == t,
+                              () => setSheetState(() => selectedType = t),
+                            ),
+                          ),
+                        )
+                        .toList(),
+                  ),
+                  const SizedBox(height: 16),
+
+                  // Outcome
+                  const Text(
+                    '结果',
+                    style: TextStyle(
+                      fontWeight: FontWeight.bold,
+                      color: Color(0xFF4A3B32),
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Row(
+                    children: [
+                      _sheetToggle(
+                        '顺利',
+                        selectedOutcome == EventOutcome.smooth,
+                        () => setSheetState(
+                          () => selectedOutcome = EventOutcome.smooth,
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      _sheetToggle(
+                        '不顺',
+                        selectedOutcome == EventOutcome.difficult,
+                        () => setSheetState(
+                          () => selectedOutcome = EventOutcome.difficult,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 24),
+
+                  // Confirm
+                  SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton(
+                      onPressed: () {
+                        final year = yearCtrl.text.trim();
+                        final desc = descCtrl.text.trim();
+                        if (year.isEmpty || desc.isEmpty) return;
+                        final event = LifeEvent(
+                          year: year,
+                          month: granularity >= 1
+                              ? selectedMonth.toString().padLeft(2, '0')
+                              : null,
+                          day: granularity >= 2
+                              ? selectedDay.toString().padLeft(2, '0')
+                              : null,
+                          description: desc,
+                          type: selectedType,
+                          outcome: selectedOutcome,
+                        );
+                        setState(() => _lifeEvents.add(event));
+                        Navigator.of(ctx).pop();
+                      },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFF8B3A3A),
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(vertical: 14),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                      ),
+                      child: const Text(
+                        '确认添加',
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          );
+        },
+      ),
+    );
+  }
+
+  Widget _sheetToggle(String label, bool selected, VoidCallback onTap) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(8),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+        decoration: BoxDecoration(
+          color: selected ? const Color(0xFF8B3A3A) : Colors.white,
+          borderRadius: BorderRadius.circular(8),
+          border: Border.all(
+            color: selected ? const Color(0xFF5E2626) : const Color(0xFFC2BBA8),
+          ),
+        ),
+        child: Text(
+          label,
+          style: TextStyle(
+            fontSize: 14,
+            fontWeight: FontWeight.bold,
+            color: selected ? Colors.white : const Color(0xFF5D4037),
+          ),
+        ),
+      ),
     );
   }
 }

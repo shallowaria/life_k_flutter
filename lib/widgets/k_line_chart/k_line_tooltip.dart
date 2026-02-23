@@ -6,11 +6,13 @@ import 'chart_view_mode.dart';
 class KLineTooltip extends StatelessWidget {
   final KLinePoint point;
   final ChartViewMode viewMode;
+  final bool isLoadingAdvice;
 
   const KLineTooltip({
     super.key,
     required this.point,
     this.viewMode = ChartViewMode.year,
+    this.isLoadingAdvice = false,
   });
 
   bool get _isInterpolated => viewMode != ChartViewMode.year;
@@ -52,10 +54,10 @@ class KLineTooltip extends StatelessWidget {
                           color: Color(0xFF1F2937),
                         ),
                       ),
-                      if (!_isInterpolated) ...[
+                      if (point.daYun != null) ...[
                         const SizedBox(height: 2),
                         Text(
-                          '大运: ${point.daYun ?? "未知"}',
+                          '大运: ${point.daYun}',
                           style: const TextStyle(
                             fontSize: 12,
                             color: Color(0xFF4F46E5),
@@ -63,7 +65,7 @@ class KLineTooltip extends StatelessWidget {
                           ),
                         ),
                       ],
-                      if (!_isInterpolated && point.tenGod != null) ...[
+                      if (point.tenGod != null) ...[
                         const SizedBox(height: 2),
                         Text(
                           '十神: ${point.tenGod!.label}',
@@ -192,18 +194,46 @@ class KLineTooltip extends StatelessWidget {
               ),
             ],
 
-            // Action advice (year view only, when available)
-            if (!_isInterpolated && point.actionAdvice != null) ...[
+            // Action advice (when available, or loading in interpolated views)
+            if (_isInterpolated && isLoadingAdvice) ...[
+              const Divider(height: 20),
+              const Row(
+                children: [
+                  SizedBox(width: 2),
+                  SizedBox(
+                    width: 12,
+                    height: 12,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      color: Color(0xFF312E81),
+                    ),
+                  ),
+                  SizedBox(width: 8),
+                  Text(
+                    '行动建议生成中...',
+                    style: TextStyle(fontSize: 12, color: Color(0xFF6B7280)),
+                  ),
+                ],
+              ),
+            ] else if (point.actionAdvice != null) ...[
               const Divider(height: 20),
               Row(
                 children: [
                   const Icon(Icons.gps_fixed, size: 14, color: Color(0xFF312E81)),
                   const SizedBox(width: 4),
-                  const Text('行动指南',
-                      style: TextStyle(
-                          fontSize: 13,
-                          fontWeight: FontWeight.bold,
-                          color: Color(0xFF312E81))),
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text('行动指南',
+                          style: TextStyle(
+                              fontSize: 13,
+                              fontWeight: FontWeight.bold,
+                              color: Color(0xFF312E81))),
+                      if (_isInterpolated)
+                        const Text('年度行动建议',
+                            style: TextStyle(fontSize: 10, color: Color(0xFF6B7280))),
+                    ],
+                  ),
                   const Spacer(),
                   if (point.actionAdvice!.scenario != null)
                     Container(

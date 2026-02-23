@@ -11,6 +11,10 @@ class KLineChart extends StatefulWidget {
   final String? title;
   final List<SupportPressureLevel> supportPressureLevels;
   final int currentAge;
+  final Map<String, ActionAdvice>? dailyAdvice;
+  final bool isLoadingDailyAdvice;
+  final void Function(ChartViewMode mode, List<KLinePoint> interpolatedPoints)?
+      onViewModeChanged;
 
   const KLineChart({
     super.key,
@@ -18,6 +22,9 @@ class KLineChart extends StatefulWidget {
     this.title,
     this.supportPressureLevels = const [],
     required this.currentAge,
+    this.dailyAdvice,
+    this.isLoadingDailyAdvice = false,
+    this.onViewModeChanged,
   });
 
   @override
@@ -33,7 +40,7 @@ class _KLineChartState extends State<KLineChart> {
   List<KLinePoint>? _cachedMonthData;
   List<KLinePoint>? _cachedDayData;
 
-  List<KLinePoint> get _displayData {
+  List<KLinePoint> get _baseDisplayData {
     switch (_viewMode) {
       case ChartViewMode.year:
         return widget.data;
@@ -44,6 +51,34 @@ class _KLineChartState extends State<KLineChart> {
         _cachedDayData ??= _generateInterpolatedData(ChartViewMode.day);
         return _cachedDayData!;
     }
+  }
+
+  List<KLinePoint> get _displayData {
+    final base = _baseDisplayData;
+    if (_viewMode == ChartViewMode.year || widget.dailyAdvice == null) {
+      return base;
+    }
+    return base.map((p) {
+      final parts = p.ganZhi.split('/');
+      final key = '${p.year}-${parts[0]}-${parts[1]}';
+      final advice = widget.dailyAdvice![key];
+      if (advice == null) return p;
+      return KLinePoint(
+        age: p.age,
+        year: p.year,
+        ganZhi: p.ganZhi,
+        daYun: p.daYun,
+        open: p.open,
+        close: p.close,
+        high: p.high,
+        low: p.low,
+        score: p.score,
+        reason: p.reason,
+        tenGod: p.tenGod,
+        energyScore: p.energyScore,
+        actionAdvice: advice,
+      );
+    }).toList();
   }
 
   List<KLinePoint> _generateInterpolatedData(ChartViewMode mode) {
@@ -63,6 +98,10 @@ class _KLineChartState extends State<KLineChart> {
       _viewMode = mode;
       _selectedIndex = null;
     });
+    if (mode != ChartViewMode.year) {
+      final points = _baseDisplayData;
+      widget.onViewModeChanged?.call(mode, points);
+    }
   }
 
   @override
@@ -127,6 +166,7 @@ class _KLineChartState extends State<KLineChart> {
               child: KLineTooltip(
                 point: point,
                 viewMode: _viewMode,
+                isLoadingAdvice: widget.isLoadingDailyAdvice,
               ),
             ),
           ],

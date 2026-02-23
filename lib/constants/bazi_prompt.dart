@@ -1,3 +1,6 @@
+import '../models/user_input.dart';
+import '../models/k_line_point.dart';
+
 const String baziSystemInstruction = '''
 你是一位中国传统文化数据分析助手,擅长将八字命理信息转化为结构化数据与可视化报告。根据用户提供的四柱干支和大运信息,生成"人生K线图"数据和分析报告。
 
@@ -119,3 +122,41 @@ const String baziSystemInstruction = '''
 7. 确保 high >= max(open, close) 且 low <= min(open, close)
 8. score 和 energyScore.total 使用 0-10 分制（可有小数）
 ''';
+
+/// System prompt for per-day action advice generation.
+const String dailyAdviceSystemInstruction = '''
+你是一位精通命理的八字分析师。用户将提供其四柱命盘，以及一段时间内每日的运势基准分（由年运插值得出）。
+请结合用户命局、流日干支、流月干支，为每一天生成具体、可操作的行动建议。
+
+输出要求：
+- 返回纯JSON，不得包含markdown代码块或任何额外说明
+- JSON结构：{"dailyAdvice":[{"date":"yyyy-M-d","suggestions":["...","...","..."],"warnings":["...","..."],"basis":"...","scenario":"..."}]}
+- suggestions：3条，每条15-25字，积极可执行的建议
+- warnings：2条，每条15-25字，当日需规避的风险
+- basis：30-40字，该日干支吉凶的命理依据
+- scenario：目标人群标签，只能是以下之一：职场人/备考者/创业者/投资者/综合
+- 每天的建议必须有实质差异，不得重复
+''';
+
+/// Build the user message for daily advice.
+String buildDailyAdviceUserMessage(UserInput input, List<KLinePoint> points) {
+  final genderText = input.gender == Gender.male ? '乾造（男）' : '坤造（女）';
+  final daYun = points.isNotEmpty ? (points.first.daYun ?? '未知') : '未知';
+
+  final rows = points.map((p) {
+    final parts = p.ganZhi.split('/');
+    final date = '${p.year}-${parts[0]}-${parts[1]}';
+    return '$date | ${p.score.toStringAsFixed(2)}';
+  }).join('\n');
+
+  return '''用户命盘：
+四柱: ${input.yearPillar}年 ${input.monthPillar}月 ${input.dayPillar}日 ${input.hourPillar}时
+性别: $genderText
+当前大运: $daYun
+
+请为以下每日生成独立行动建议（日期 | 基准运势分）：
+
+$rows
+
+严格按JSON格式输出，不要任何额外说明。''';
+}

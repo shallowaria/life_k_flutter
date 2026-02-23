@@ -33,6 +33,9 @@ class KLineInterpolationService {
     final firstAnchorDate = _dateToDouble(DateTime(anchorPoints.first.year, 1, 1));
     final lastAnchorDate = _dateToDouble(DateTime(anchorPoints.last.year, 12, 31));
 
+    // Build year-keyed lookup for fast anchor access
+    final anchorByYear = {for (final a in anchorPoints) a.year: a};
+
     final results = <KLinePoint>[];
     var current = DateTime(start.year, start.month, start.day);
     final endDay = DateTime(end.year, end.month, end.day);
@@ -77,20 +80,27 @@ class KLineInterpolationService {
       // Determine if this date is outside the anchor range
       final isExtrapolated = t < firstAnchorDate || t > lastAnchorDate;
 
+      // Inherit metadata from the nearest annual anchor
+      final anchor = anchorByYear[current.year] ??
+          anchorPoints.reduce((a, b) =>
+              (current.year - a.year).abs() <= (current.year - b.year).abs()
+                  ? a
+                  : b);
+
       results.add(KLinePoint(
         age: anchorAge,
         year: current.year,
         ganZhi: dateLabel,
-        daYun: null,
+        daYun: anchor.daYun,
         open: double.parse(open.toStringAsFixed(2)),
         close: double.parse(close.toStringAsFixed(2)),
         high: double.parse(high.toStringAsFixed(2)),
         low: double.parse(low.toStringAsFixed(2)),
         score: double.parse(baseScore.toStringAsFixed(2)),
-        reason: isExtrapolated ? '线性外推插值' : '三次样条插值',
-        tenGod: null,
+        reason: isExtrapolated ? '线性外推插值' : anchor.reason,
+        tenGod: anchor.tenGod,
         energyScore: null,
-        actionAdvice: null,
+        actionAdvice: anchor.actionAdvice,
       ));
 
       current = current.add(const Duration(days: 1));

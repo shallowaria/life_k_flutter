@@ -624,7 +624,7 @@ class _InputScreenState extends State<InputScreen> {
           children: [
             const Center(
               child: Text(
-                '— 过往人生大事（可选）—',
+                '— 过往人生大事(可选) —',
                 style: TextStyle(
                   fontSize: 16,
                   fontWeight: FontWeight.bold,

@@ -37,8 +37,7 @@ class _ResultScreenState extends State<ResultScreen> {
     return false;
   }
 
-  void _onViewModeChanged(
-      ChartViewMode mode, List<KLinePoint> points) {
+  void _onViewModeChanged(ChartViewMode mode, List<KLinePoint> points) {
     setState(() => _currentMode = mode);
     if (mode == ChartViewMode.month &&
         _monthAdvice == null &&
@@ -51,8 +50,7 @@ class _ResultScreenState extends State<ResultScreen> {
     }
   }
 
-  Future<void> _fetchAdvice(
-      ChartViewMode mode, List<KLinePoint> points) async {
+  Future<void> _fetchAdvice(ChartViewMode mode, List<KLinePoint> points) async {
     final userInputState = context.read<UserInputBloc>().state;
     if (userInputState is! UserInputReady) return;
     final userInput = userInputState.input;
@@ -68,8 +66,10 @@ class _ResultScreenState extends State<ResultScreen> {
     });
 
     try {
-      final advice =
-          await service.generateDailyAdvice(input: userInput, points: points);
+      final advice = await service.generateDailyAdvice(
+        input: userInput,
+        points: points,
+      );
       if (!mounted) return;
       setState(() {
         if (mode == ChartViewMode.month) {

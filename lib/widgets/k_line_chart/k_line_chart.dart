@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../../models/k_line_point.dart';
 import '../../models/analysis_data.dart';
 import '../../services/kline_interpolation_service.dart';
+import '../../services/tick_tick_service.dart';
 import 'chart_view_mode.dart';
 import 'k_line_painter.dart';
 import 'k_line_tooltip.dart';
@@ -136,6 +137,40 @@ class _KLineChartState extends State<KLineChart> {
     _tooltipOverlay = null;
   }
 
+  Future<void> _handleReminderTap(KLinePoint point) async {
+    final rootContext = context;
+    final messenger = ScaffoldMessenger.of(rootContext);
+
+    final pickedTime = await showTimePicker(
+      context: rootContext,
+      initialTime: const TimeOfDay(hour: 10, minute: 0),
+      helpText: '选择提醒时间',
+    );
+    if (pickedTime == null) return;
+
+    final success = await TickTickService.createReminder(
+      point: point,
+      time: pickedTime,
+      date: DateTime.now(),
+    );
+
+    if (!mounted) return;
+
+    messenger.showSnackBar(
+      success
+          ? const SnackBar(
+              content: Text('内容已复制到剪贴板，请在收集箱长按粘贴创建任务'),
+              duration: Duration(seconds: 3),
+            )
+          : SnackBar(
+              content: Text(
+                '滴答清单未安装，提醒内容：${TickTickService.buildFallbackText(point, pickedTime)}',
+              ),
+              duration: const Duration(seconds: 5),
+            ),
+    );
+  }
+
   void _showTooltip(int index, Offset globalPosition) {
     _removeTooltip();
     final data = _displayData;
@@ -178,6 +213,10 @@ class _KLineChartState extends State<KLineChart> {
                 point: point,
                 viewMode: _viewMode,
                 isLoadingAdvice: widget.isLoadingDailyAdvice,
+                onReminderTap: (_viewMode == ChartViewMode.day &&
+                        point.actionAdvice != null)
+                    ? () => _handleReminderTap(point)
+                    : null,
               ),
             ),
           ],

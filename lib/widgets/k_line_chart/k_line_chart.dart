@@ -138,6 +138,9 @@ class _KLineChartState extends State<KLineChart> {
   }
 
   Future<void> _handleReminderTap(KLinePoint point) async {
+    _removeTooltip();
+    setState(() => _selectedIndex = null);
+
     final rootContext = context;
     final messenger = ScaffoldMessenger.of(rootContext);
 

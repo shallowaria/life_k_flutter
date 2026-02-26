@@ -89,5 +89,4 @@ Dart SDK `^3.10.7`. Linting via `package:flutter_lints/flutter.yaml`.
 
 ## Project Rules
 
-@.claude/rules_4k.md
 @.claude/ARCHITECTURE.md

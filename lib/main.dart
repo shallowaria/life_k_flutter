@@ -11,6 +11,8 @@ import 'blocs/destiny_result/destiny_result_bloc.dart';
 import 'blocs/destiny_result/destiny_result_event.dart';
 import 'screens/input_screen.dart';
 import 'screens/result_screen.dart';
+import 'package:flutter/services.dart';
+import 'utils/exit_tip_overlay.dart';
 
 void main() {
   runApp(const LifeKApp());
@@ -18,6 +20,9 @@ void main() {
 
 class LifeKApp extends StatelessWidget {
   const LifeKApp({super.key});
+
+  static DateTime? _lastPressedAt;
+  static final int _pressContinuetime = 4;
 
   @override
   Widget build(BuildContext context) {
@@ -90,7 +95,28 @@ class LifeKApp extends StatelessWidget {
   static final _router = GoRouter(
     initialLocation: '/input',
     routes: [
-      GoRoute(path: '/input', builder: (context, state) => const InputScreen()),
+      GoRoute(
+        path: '/input',
+        builder: (context, state) => PopScope(
+          canPop: false, // 拦截返回键
+          onPopInvokedWithResult: (didPop, result) async {
+            if (didPop) return;
+
+            final now = DateTime.now();
+            // 判断两次点击间隔是否超过 4 秒
+            if (_lastPressedAt == null ||
+                now.difference(_lastPressedAt!) >
+                    Duration(seconds: _pressContinuetime)) {
+              _lastPressedAt = now; // 更新时间
+              ExitTipOverlay.show(context); // 调用刚才定义的工具类显示提示
+            } else {
+              // 4秒内第二次点击，直接退出
+              SystemNavigator.pop();
+            }
+          },
+          child: const InputScreen(),
+        ),
+      ),
       GoRoute(
         path: '/result',
         builder: (context, state) => const ResultScreen(),

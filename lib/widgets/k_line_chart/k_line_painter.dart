@@ -13,6 +13,10 @@ class KLinePainter extends CustomPainter {
   final double candleWidth;
   final ChartViewMode viewMode;
 
+  /// Indices (into [data]) of the originally AI-generated key years.
+  /// When non-null, only these indices receive 启/变 stamps.
+  final Set<int>? keyYearIndices;
+
   // Colors - Chinese painting aesthetic
   static const Color cinnabarRed = Color(0xFFB22D1B); // 朱砂红 - up/吉
   static const Color cinnabarStroke = Color(0xFF8B1810);
@@ -30,6 +34,7 @@ class KLinePainter extends CustomPainter {
     this.scrollOffset = 0,
     this.candleWidth = 20,
     this.viewMode = ChartViewMode.year,
+    this.keyYearIndices,
   });
 
   // Chart layout constants
@@ -676,6 +681,8 @@ class KLinePainter extends CustomPainter {
     final maxHigh = data.map((p) => p.high).reduce(max);
     for (var i = 0; i < data.length; i++) {
       if (data[i].actionAdvice == null) continue;
+      // Only stamp originally-generated key years (when set is provided)
+      if (keyYearIndices != null && !keyYearIndices!.contains(i)) continue;
       final d = data[i];
       final x = mapX(i);
       final y = mapY(d.high);
@@ -835,6 +842,7 @@ class KLinePainter extends CustomPainter {
     return oldDelegate.data != data ||
         oldDelegate.selectedIndex != selectedIndex ||
         oldDelegate.scrollOffset != scrollOffset ||
-        oldDelegate.viewMode != viewMode;
+        oldDelegate.viewMode != viewMode ||
+        oldDelegate.keyYearIndices != keyYearIndices;
   }
 }

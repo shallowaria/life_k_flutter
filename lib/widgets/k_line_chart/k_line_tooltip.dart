@@ -208,8 +208,8 @@ class KLineTooltip extends StatelessWidget {
               ),
             ],
 
-            // Action advice (when available, or loading in interpolated views)
-            if (_isInterpolated && isLoadingAdvice) ...[
+            // Action advice (when available, or loading)
+            if (isLoadingAdvice) ...[
               const Divider(height: 20),
               const Row(
                 children: [

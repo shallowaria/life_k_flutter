@@ -363,6 +363,12 @@ class _KLineChartState extends State<KLineChart> {
                   supportPressureLevels: widget.supportPressureLevels,
                   selectedIndex: _selectedIndex,
                   viewMode: _viewMode,
+                  keyYearIndices: _viewMode == ChartViewMode.year
+                      ? {
+                          for (var i = 0; i < widget.data.length; i++)
+                            if (widget.data[i].actionAdvice != null) i,
+                        }
+                      : null,
                 ),
               ),
             ),

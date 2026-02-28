@@ -102,7 +102,7 @@ void main() {
 
     test('all yang stems are recognized', () {
       for (final stem in ['甲', '丙', '戊', '庚', '壬']) {
-        final dir = getDaYunDirection('${stem}子', Gender.male);
+        final dir = getDaYunDirection('$stem子', Gender.male);
         expect(
           dir.isForward,
           isTrue,
@@ -113,7 +113,7 @@ void main() {
 
     test('all yin stems are recognized', () {
       for (final stem in ['乙', '丁', '己', '辛', '癸']) {
-        final dir = getDaYunDirection('${stem}子', Gender.male);
+        final dir = getDaYunDirection('$stem子', Gender.male);
         expect(
           dir.isForward,
           isFalse,

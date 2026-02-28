@@ -1,5 +1,28 @@
 {
   "enabledPlugins": {
     "code-review@claude-plugins-official": true
+  },
+  "permissions": {
+    "allow": ["Bash(git add .)", "Bash(git commit -m *)", "Bash(git push)"],
+    "deny": [
+      "Read(.env*)",
+      "Read(*.pem)",
+      "Read(*.key)",
+      "Read(config/secrets.*)",
+      "Bash(grep -r \"password\" .)"
+    ]
+  },
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Edit|Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python -c \"import sys,json,subprocess; d=json.load(sys.stdin); fp=d.get('tool_input',{}).get('file_path',''); fp.endswith('.dart') and subprocess.run(['dart','format',fp])\""
+          }
+        ]
+      }
+    ]
   }
 }

@@ -44,7 +44,9 @@ ${_buildLifeEventsSection(input)}
 
   String _buildLifeEventsSection(UserInput input) {
     if (input.lifeEvents == null || input.lifeEvents!.isEmpty) return '';
-    final lines = input.lifeEvents!.map((e) => '- ${e.toPromptString()}').join('\n');
+    final lines = input.lifeEvents!
+        .map((e) => '- ${e.toPromptString()}')
+        .join('\n');
     return '\n## 用户过往人生大事（请据此校准运势模型）\n$lines\n';
   }
 
@@ -104,9 +106,7 @@ ${_buildLifeEventsSection(input)}
         }
 
         // 5xx errors: retry
-        lastError = Exception(
-          'API 服务端错误 ($status): ${response.data}',
-        );
+        lastError = Exception('API 服务端错误 ($status): ${response.data}');
       } on DioException catch (e) {
         lastError = e;
       } catch (e) {
@@ -286,8 +286,9 @@ ${_buildLifeEventsSection(input)}
         final list = json['dailyAdvice'] as List;
         return {
           for (final item in list)
-            item['date'] as String:
-                ActionAdvice.fromJson(item as Map<String, dynamic>),
+            item['date'] as String: ActionAdvice.fromJson(
+              item as Map<String, dynamic>,
+            ),
         };
       } on Exception catch (e) {
         lastError = e;

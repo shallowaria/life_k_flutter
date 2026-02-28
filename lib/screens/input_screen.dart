@@ -130,7 +130,7 @@ class _InputScreenState extends State<InputScreen> {
   Widget build(BuildContext context) {
     return BlocListener<DestinyResultBloc, DestinyResultState>(
       listener: (context, state) {
-        if (state is DestinyResultSuccess) context.go('/result');
+        if (state is DestinyResultSuccess) context.push('/result');
       },
       child: Scaffold(
         body: Container(

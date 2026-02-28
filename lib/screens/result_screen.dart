@@ -106,7 +106,7 @@ class _ResultScreenState extends State<ResultScreen> {
                   const Text('暂无数据，请先生成K线图'),
                   const SizedBox(height: 16),
                   ElevatedButton(
-                    onPressed: () => context.go('/input'),
+                    onPressed: () => context.pop(),
                     child: const Text('返回输入'),
                   ),
                 ],
@@ -140,7 +140,7 @@ class _ResultScreenState extends State<ResultScreen> {
                         Icons.arrow_back,
                         color: Color(0xFF2C1810),
                       ),
-                      onPressed: () => context.go('/input'),
+                      onPressed: () => context.pop(),
                     ),
                     title: Text(
                       '$userName 的人生K线图',

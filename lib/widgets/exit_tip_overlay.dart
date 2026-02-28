@@ -9,7 +9,7 @@ class ExitTipOverlay {
     _isShowing = true;
 
     // 获取当前的 OverlayState
-    final overlay = Overlay.of(context);
+    final overlay = Overlay.of(context, rootOverlay: true);
 
     _overlayEntry = OverlayEntry(
       builder: (context) => _ExitToastWidget(

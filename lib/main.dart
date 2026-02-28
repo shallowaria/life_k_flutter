@@ -13,8 +13,11 @@ import 'screens/input_screen.dart';
 import 'screens/result_screen.dart';
 import 'package:flutter/services.dart';
 import 'utils/exit_tip_overlay.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 
-void main() {
+Future<void> main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  await dotenv.load(fileName: '.env');
   runApp(const LifeKApp());
 }
 

@@ -55,7 +55,7 @@ InputScreen → BaziCalculator.calculate() → UserInput model
 | Layer     | Location                    | Purpose                                                                                                                                                                                                                                 |
 | --------- | --------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | Models    | `lib/models/`               | `KLinePoint` (OHLC + score + TenGod + energy + advice), `AnalysisData` (9 dimensions), `UserInput` (birth info + 4 pillars), `LifeDestinyResult` (wrapper)                                                                              |
-| Services  | `lib/services/`             | `BaziCalculator` — static Four Pillars computation via `lunar` library; `DestinyApiService` — Anthropic API with 3 retries + exponential backoff (30s connect / 120s receive timeout); `StorageService` — SharedPreferences persistence |
+| Services  | `lib/services/`             | `BaziCalculator` — static Four Pillars computation via `lunar` library; `DestinyApiService` — Anthropic API with shared `_retryPost` (5 attempts, AI-refusal detection, exponential back-off, 60s connect / 300s receive timeout); `StorageService` — SharedPreferences persistence |
 | BLoCs     | `lib/blocs/`                | `user_input/` and `destiny_result/` each with event/state/bloc files                                                                                                                                                                    |
 | Screens   | `lib/screens/`              | `InputScreen` (birth form + ShiChen grid + live pillar preview), `ResultScreen` (chart + 9D analysis cards + action advice)                                                                                                             |
 | Widgets   | `lib/widgets/k_line_chart/` | `KLineChart` (interactive tap + tooltip overlay), `KLinePainter` (CustomPainter with diamond candles, MK10 line, support/pressure levels, Da Yun separators), `KLineTooltip` (detailed popup)                                           |
@@ -68,7 +68,12 @@ GoRouter with two routes: `/input` (initial) and `/result`.
 
 ### API Integration
 
-`DestinyApiService` calls the Anthropic Messages API. The system prompt in `bazi_prompt.dart` defines strict rules for generating 30-year fortune data including OHLC scoring, 9-dimensional analysis, support/pressure levels, and action advice. The auth token in `main.dart` is currently empty and needs configuration.
+`DestinyApiService` calls the Anthropic Messages API. The system prompt in `bazi_prompt.dart` frames the task as a **JSON data generation engine** (not fortune-telling) to avoid AI safety refusals. The service uses a shared `_retryPost` helper (max 5 attempts) that handles:
+- **4xx errors** — immediate rethrow, no retry
+- **5xx errors** — exponential back-off (5s × attempt)
+- **AI refusal text** — detected via `_isAiRefusal()` keyword check, retried with 3s delay
+
+Config is loaded from `.env` via `flutter_dotenv` (see `lib/core/config/env.dart`). The `.env` file must exist at the project root and is declared as a Flutter asset.
 
 ### Chart Rendering
 
@@ -82,6 +87,8 @@ GoRouter with two routes: `/input` (initial) and `/result`.
 - **lunar** — Chinese calendar / BaZi calculation
 - **shared_preferences** — Local key-value storage
 - **equatable** — Value equality for BLoC states/events
+- **flutter_dotenv** — Runtime `.env` file loading for API config
+- **url_launcher** — External URL launching
 
 ##SDK
 

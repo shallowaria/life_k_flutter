@@ -81,7 +81,11 @@ DestinyResultBloc.add(DestinyResultGenerate)
           用户提示：四柱 + 性别 + 起运年龄 + 可选人生事件
           max_tokens: 16000, temperature: 0.5
           超时：60s connect / 300s receive
-          重试：3次，指数退避（5s / 10s），5xx 重试，4xx 立即失败
+          重试：最多5次，_retryPost 统一处理
+            - 4xx → 立即失败，不重试
+            - 5xx → 指数退避（5s × attempt）
+            - AI拒绝文本 → _isAiRefusal() 检测，3s 后重试
+          解析：每步均有 try-catch，解析失败抛 Exception 而非崩溃
       → 解析 JSON → normalizeScore() 归一化 0-10
       → 构造 LifeDestinyResult (30 KLinePoints + AnalysisData)
   → StorageService.saveDestinyResult()    // 缓存结果
@@ -210,13 +214,19 @@ class LifeEvent {
 
 ### DestinyApiService
 - 调用 Anthropic Messages API（`/v1/messages`）
-- **generateDestiny()**：生成30年运势 JSON
-- **generateDailyAdvice()**：
+- **`_retryPost()`**：私有统一重试方法，两个公开方法均委托于此
+  - 最多 5 次重试
+  - 4xx → 立即抛出（客户端错误）
+  - 5xx → 指数退避（5s × attempt）
+  - AI 拒绝文本 → `_isAiRefusal()` 关键词检测，3s 后重试
+- **`generateDestiny()`**：生成30年运势 JSON，解析后包 try-catch
+- **`generateDailyAdvice()`**：
   - 先调用 `KLineInterpolationService` 插值至日级
   - 再请求每日行动建议
   - 返回 `Map<String, ActionAdvice>`（键："yyyy-M-d"）
+  - 解析段包 try-catch，失败抛带描述的 Exception
 - 响应解析：提取文本块 → 清理 Markdown → 解析 JSON → 归一化分数
-- 错误处理：区分 4xx（立即失败）和 5xx（重试）
+- System prompt 将任务框架定义为"JSON 数据生成引擎"以规避 AI 安全拒绝
 
 ### StorageService
 - SharedPreferences 封装
@@ -318,16 +328,18 @@ double normalizeScore(double score) {
 ## 环境配置
 
 ```dart
-// lib/core/config/env.dart
+// lib/core/config/env.dart — 运行时从 .env 文件读取
 class Env {
-  static const baseUrl   = String.fromEnvironment('API_BASE_URL',   defaultValue: '...');
-  static const authToken = String.fromEnvironment('API_AUTH_TOKEN', defaultValue: '...');
-  static const model     = String.fromEnvironment('API_MODEL',      defaultValue: 'claude-haiku-4-5-20251001');
-  static const flavor    = String.fromEnvironment('FLAVOR',         defaultValue: 'dev');
+  static String get baseUrl   => dotenv.env['API_BASE_URL']   ?? '';
+  static String get authToken => dotenv.env['API_AUTH_TOKEN'] ?? '';
+  static String get model     => dotenv.env['API_MODEL']      ?? 'claude-haiku-4-5-20251001';
+  static String get flavor    => dotenv.env['FLAVOR']         ?? 'dev';
 }
 ```
 
-覆盖方式：`flutter run --dart-define=API_BASE_URL=xxx --dart-define=API_AUTH_TOKEN=yyy`
+- 依赖 `flutter_dotenv`，在 `main()` 中 `await dotenv.load(fileName: '.env')` 加载
+- `.env` 文件放在项目根目录，已在 `pubspec.yaml` 的 `flutter.assets` 中注册
+- `.env` 已加入 `.gitignore`，不提交至版本库
 
 ---
 
@@ -343,6 +355,8 @@ class Env {
 | `shared_preferences` | ^2.5.3 | 本地 KV 存储 |
 | `equatable` | ^2.0.7 | BLoC 值相等 |
 | `intl` | ^0.20.2 | 国际化 |
+| `flutter_dotenv` | ^6.0.0 | .env 环境变量加载 |
+| `url_launcher` | ^6.3.1 | 外部链接跳转 |
 | `flutter_launcher_icons` | ^0.14.4 | 图标生成（dev） |
 | `flutter_lints` | ^6.0.0 | 代码规范（dev） |
 

@@ -22,8 +22,8 @@ class KLineTooltip extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isUp = point.close >= point.open;
-    // 1. 定义一个状态判断：是否已经准备好可以点击
-    final bool isReady = point.actionAdvice != null;
+    // 1. 定义一个状态判断：是否已经准备好可以点击（加载中时强制为 false，避免旧数据残留）
+    final bool isReady = point.actionAdvice != null && !isLoadingAdvice;
 
     return Material(
       elevation: 8,
@@ -339,7 +339,7 @@ class KLineTooltip extends StatelessWidget {
                   // 2. 当未准备好时，将 onPressed 设为 null，按钮会自动变为禁用状态
                   onPressed: isReady ? onReminderTap : null,
                   icon: Text(
-                    '✔️',
+                    '🤔',
                     style: TextStyle(
                       fontSize: 14,
                       // 3. 禁用时图标也变灰色
@@ -347,7 +347,7 @@ class KLineTooltip extends StatelessWidget {
                     ),
                   ),
                   label: Text(
-                    isReady ? '添加到滴答清单' : '建议加载中...', // 可选：动态修改文案
+                    isReady ? '添加到滴答清单 ✔️' : '建议加载中... ❌', // 可选：动态修改文案
                     style: const TextStyle(
                       fontSize: 13,
                       fontWeight: FontWeight.w500,

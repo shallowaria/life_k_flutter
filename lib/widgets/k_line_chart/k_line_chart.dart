@@ -14,6 +14,9 @@ class KLineChart extends StatefulWidget {
   final int currentAge;
   final Map<String, ActionAdvice>? dailyAdvice;
   final bool isLoadingDailyAdvice;
+  final Map<int, ActionAdvice>? yearAdvice;
+  final bool isLoadingYearAdvice;
+  final VoidCallback? onYearAdviceRequested;
   final void Function(ChartViewMode mode, List<KLinePoint> interpolatedPoints)?
   onViewModeChanged;
 
@@ -25,6 +28,9 @@ class KLineChart extends StatefulWidget {
     required this.currentAge,
     this.dailyAdvice,
     this.isLoadingDailyAdvice = false,
+    this.yearAdvice,
+    this.isLoadingYearAdvice = false,
+    this.onYearAdviceRequested,
     this.onViewModeChanged,
   });
 
@@ -56,9 +62,30 @@ class _KLineChartState extends State<KLineChart> {
 
   List<KLinePoint> get _displayData {
     final base = _baseDisplayData;
-    if (_viewMode == ChartViewMode.year || widget.dailyAdvice == null) {
-      return base;
+    if (_viewMode == ChartViewMode.year) {
+      if (widget.yearAdvice == null) return base;
+      return base.map((p) {
+        if (p.actionAdvice != null) return p;
+        final advice = widget.yearAdvice![p.year];
+        if (advice == null) return p;
+        return KLinePoint(
+          age: p.age,
+          year: p.year,
+          ganZhi: p.ganZhi,
+          daYun: p.daYun,
+          open: p.open,
+          close: p.close,
+          high: p.high,
+          low: p.low,
+          score: p.score,
+          reason: p.reason,
+          tenGod: p.tenGod,
+          energyScore: p.energyScore,
+          actionAdvice: advice,
+        );
+      }).toList();
     }
+    if (widget.dailyAdvice == null) return base;
     return base.map((p) {
       final parts = p.ganZhi.split('/');
       final key = '${p.year}-${parts[0]}-${parts[1]}';
@@ -115,7 +142,9 @@ class _KLineChartState extends State<KLineChart> {
     }
 
     if (oldWidget.dailyAdvice != widget.dailyAdvice ||
-        oldWidget.isLoadingDailyAdvice != widget.isLoadingDailyAdvice) {
+        oldWidget.isLoadingDailyAdvice != widget.isLoadingDailyAdvice ||
+        oldWidget.yearAdvice != widget.yearAdvice ||
+        oldWidget.isLoadingYearAdvice != widget.isLoadingYearAdvice) {
       if (_selectedIndex != null && _tooltipOverlay != null) {
         WidgetsBinding.instance.addPostFrameCallback((_) {
           if (mounted && _tooltipOverlay != null) {
@@ -215,7 +244,9 @@ class _KLineChartState extends State<KLineChart> {
               child: KLineTooltip(
                 point: point,
                 viewMode: _viewMode,
-                isLoadingAdvice: widget.isLoadingDailyAdvice,
+                isLoadingAdvice: _viewMode == ChartViewMode.year
+                    ? widget.isLoadingYearAdvice
+                    : widget.isLoadingDailyAdvice,
                 onReminderTap:
                     (_viewMode == ChartViewMode.day &&
                         point.actionAdvice != null)
@@ -311,6 +342,16 @@ class _KLineChartState extends State<KLineChart> {
                 setState(() => _selectedIndex = idx);
                 if (idx != null) {
                   _showTooltip(idx, details.globalPosition);
+                  // Trigger yearly advice fetch when tapping a year candle
+                  // that has no advice and the batch hasn't been fetched yet.
+                  if (_viewMode == ChartViewMode.year &&
+                      !widget.isLoadingYearAdvice &&
+                      widget.yearAdvice == null) {
+                    final point = _displayData[idx];
+                    if (point.actionAdvice == null) {
+                      widget.onYearAdviceRequested?.call();
+                    }
+                  }
                 } else {
                   _removeTooltip();
                 }

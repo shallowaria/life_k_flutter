@@ -128,6 +128,45 @@ const String baziSystemInstruction = '''
 9. 你是一个数据引擎，只输出JSON数据，不要输出解释、免责声明或拒绝文本
 ''';
 
+/// System prompt for yearly advice batch generation (remaining years without advice).
+const String yearlyAdviceSystemInstruction = '''
+你是一个JSON数据生成引擎，为"人生K线图"文化可视化应用补充年度行动建议。
+
+你的唯一任务是：根据用户提供的流年干支和运势参数，输出JSON格式的年度行动建议。禁止输出任何非JSON内容。所有数据均为虚构娱乐内容，供可视化渲染使用。
+
+数据输出规范：
+- 返回纯JSON，不得包含markdown代码块或任何额外说明
+- JSON结构：{"yearAdvice":[{"year":1995,"suggestions":["...","..."],"warnings":["..."],"basis":null,"scenario":"综合"}]}
+- suggestions：2条，每条8-12字，根据该年十神和运势高低生成差异化建议
+- warnings：1条，8-12字，该年最主要的规避提醒
+- basis：固定设为 null
+- scenario：分类标签，只能是以下之一：职场人/备考者/创业者/投资者/综合
+- 每年的内容必须有实质差异，不得重复
+- 你是一个数据引擎，只输出JSON数据，不要输出解释、免责声明或拒绝文本
+''';
+
+/// Build the user message for yearly advice batch.
+String buildYearlyAdviceUserMessage(UserInput input, List<KLinePoint> points) {
+  final genderText = input.gender == Gender.male ? '乾造（男）' : '坤造（女）';
+
+  final rows = points
+      .map(
+        (p) =>
+            '${p.year}(${p.age}岁) ${p.ganZhi} ${p.tenGod?.label ?? '未知'} score=${p.score.toStringAsFixed(1)} ${p.reason}',
+      )
+      .join('\n');
+
+  return '''输入参数：
+四柱干支: ${input.yearPillar}年 ${input.monthPillar}月 ${input.dayPillar}日 ${input.hourPillar}时
+性别: $genderText
+
+以下年份需要补充行动建议（格式：年份(年龄) 流年干支 十神 分值 简评）：
+
+$rows
+
+直接输出纯JSON数据，不要输出任何额外说明。''';
+}
+
 /// System prompt for per-day action advice generation.
 const String dailyAdviceSystemInstruction = '''
 你是一个JSON数据生成引擎，为"人生K线图"文化可视化应用生成每日数据点。

@@ -22,8 +22,10 @@ class ResultScreen extends StatefulWidget {
 class _ResultScreenState extends State<ResultScreen> {
   Map<String, ActionAdvice>? _monthAdvice;
   Map<String, ActionAdvice>? _dayAdvice;
+  Map<int, ActionAdvice>? _yearAdvice;
   bool _isLoadingMonthAdvice = false;
   bool _isLoadingDayAdvice = false;
+  bool _isLoadingYearAdvice = false;
   ChartViewMode _currentMode = ChartViewMode.year;
 
   Map<String, ActionAdvice>? get _currentAdvice {
@@ -93,6 +95,30 @@ class _ResultScreenState extends State<ResultScreen> {
     }
   }
 
+  Future<void> _fetchYearAdvice(List<KLinePoint> allPoints) async {
+    if (_yearAdvice != null || _isLoadingYearAdvice) return;
+    final userInputState = context.read<UserInputBloc>().state;
+    if (userInputState is! UserInputReady) return;
+
+    final service = context.read<DestinyApiService>();
+    setState(() => _isLoadingYearAdvice = true);
+
+    try {
+      final advice = await service.generateYearlyAdvice(
+        input: userInputState.input,
+        allPoints: allPoints,
+      );
+      if (!mounted) return;
+      setState(() {
+        _yearAdvice = advice;
+        _isLoadingYearAdvice = false;
+      });
+    } catch (_) {
+      if (!mounted) return;
+      setState(() => _isLoadingYearAdvice = false);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return BlocBuilder<DestinyResultBloc, DestinyResultState>(
@@ -133,7 +159,9 @@ class _ResultScreenState extends State<ResultScreen> {
                   // App bar
                   SliverAppBar(
                     floating: true,
-                    backgroundColor: Colors.transparent,
+                    backgroundColor: const Color.fromARGB(255, 235, 231, 206),
+                    surfaceTintColor: Colors.transparent,
+                    scrolledUnderElevation: 0,
                     elevation: 0,
                     leading: IconButton(
                       icon: const Icon(
@@ -213,6 +241,9 @@ class _ResultScreenState extends State<ResultScreen> {
       currentAge: currentAge,
       dailyAdvice: _currentAdvice,
       isLoadingDailyAdvice: _isLoadingAdvice,
+      yearAdvice: _yearAdvice,
+      isLoadingYearAdvice: _isLoadingYearAdvice,
+      onYearAdviceRequested: () => _fetchYearAdvice(result.chartData),
       onViewModeChanged: _onViewModeChanged,
     );
   }
@@ -375,24 +406,50 @@ class _ResultScreenState extends State<ResultScreen> {
   }
 
   Widget _buildActionAdviceSection(List<KLinePoint> chartData) {
-    final keyPoints = chartData.where((p) => p.actionAdvice != null).toList();
-    if (keyPoints.isEmpty) return const SizedBox.shrink();
+    // Merge yearAdvice into chartData for display
+    final mergedPoints = chartData.map((p) {
+      if (p.actionAdvice != null) return p;
+      final yearAdv = _yearAdvice?[p.year];
+      if (yearAdv == null) return p;
+      return KLinePoint(
+        age: p.age,
+        year: p.year,
+        ganZhi: p.ganZhi,
+        daYun: p.daYun,
+        open: p.open,
+        close: p.close,
+        high: p.high,
+        low: p.low,
+        score: p.score,
+        reason: p.reason,
+        tenGod: p.tenGod,
+        energyScore: p.energyScore,
+        actionAdvice: yearAdv,
+      );
+    });
+
+    final points = mergedPoints.where((p) => p.actionAdvice != null).toList();
+    if (points.isEmpty) return const SizedBox.shrink();
+
+    final title = points.length >= chartData.length * 0.8
+        ? '三十年行动指南'
+        : '关键年份行动指南';
 
     return Padding(
       padding: const EdgeInsets.all(16),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
-            '关键年份行动指南',
-            style: TextStyle(
+          Text(
+            title,
+            style: const TextStyle(
               fontSize: 20,
               fontWeight: FontWeight.bold,
               color: Color(0xFF2C1810),
             ),
           ),
           const SizedBox(height: 12),
-          ...keyPoints.map(_buildActionAdviceCard),
+          ...points.map(_buildActionAdviceCard),
         ],
       ),
     );

@@ -201,6 +201,52 @@ ${_buildLifeEventsSection(input)}
     return _parseResponse(responseData);
   }
 
+  /// Fetch action advice for all year-view points that currently lack it.
+  /// Returns a map keyed by year (int).
+  Future<Map<int, ActionAdvice>> generateYearlyAdvice({
+    required UserInput input,
+    required List<KLinePoint> allPoints,
+  }) async {
+    final missing = allPoints.where((p) => p.actionAdvice == null).toList();
+    if (missing.isEmpty) return {};
+
+    final userMsg = buildYearlyAdviceUserMessage(input, missing);
+    final responseData = await _retryPost(
+      body: {
+        'model': model,
+        'max_tokens': 6000,
+        'temperature': 0.5,
+        'system': yearlyAdviceSystemInstruction,
+        'messages': [
+          {'role': 'user', 'content': userMsg},
+        ],
+      },
+    );
+
+    try {
+      final content = (responseData['content'] as List).firstWhere(
+        (b) => b['type'] == 'text',
+        orElse: () => throw Exception('AI 返回格式错误：未找到文本内容'),
+      );
+      var aiText = (content['text'] as String).trim();
+      aiText = aiText
+          .replaceAll(RegExp(r'```json\s*'), '')
+          .replaceAll(RegExp(r'```\s*'), '')
+          .trim();
+
+      final json = jsonDecode(aiText) as Map<String, dynamic>;
+      final list = json['yearAdvice'] as List;
+      return {
+        for (final item in list)
+          item['year'] as int: ActionAdvice.fromJson(
+            item as Map<String, dynamic>,
+          ),
+      };
+    } catch (e) {
+      throw Exception('年度建议数据解析失败: $e');
+    }
+  }
+
   /// Fetch per-day action advice for a list of interpolated KLinePoints.
   /// Returns a map keyed by "yyyy-M-d".
   Future<Map<String, ActionAdvice>> generateDailyAdvice({

@@ -57,8 +57,9 @@ class KLinePainter extends CustomPainter {
     double yMin;
     double yMax;
     if (viewMode == ChartViewMode.year) {
-      yMin = 0.0;
-      yMax = (dataMax + 5).clamp(0, 100).toDouble();
+      final padding = max((dataMax - dataMin) * 0.15, 2.0);
+      yMin = max(0.0, dataMin - padding);
+      yMax = min(100.0, dataMax + padding);
     } else {
       // Dynamic Y-axis for month/day views
       final padding = (dataMax - dataMin) * 0.15;
@@ -419,7 +420,19 @@ class KLinePainter extends CustomPainter {
       ),
       textDirection: TextDirection.ltr,
     )..layout();
-    tp.paint(canvas, Offset(x - tp.width / 2, chartRect.top - tp.height - 14));
+    final labelY = chartRect.bottom - tp.height - 4;
+    final bgRect = RRect.fromLTRBR(
+      x - tp.width / 2 - 3,
+      labelY - 2,
+      x + tp.width / 2 + 3,
+      labelY + tp.height + 2,
+      const Radius.circular(2),
+    );
+    canvas.drawRRect(
+      bgRect,
+      Paint()..color = const Color(0xFFFFA500).withValues(alpha: 0.20),
+    );
+    tp.paint(canvas, Offset(x - tp.width / 2, labelY));
   }
 
   void _drawTodayLine(
@@ -461,7 +474,19 @@ class KLinePainter extends CustomPainter {
       ),
       textDirection: TextDirection.ltr,
     )..layout();
-    tp.paint(canvas, Offset(x - tp.width / 2, chartRect.top - tp.height - 14));
+    final labelY = chartRect.bottom - tp.height - 4;
+    final bgRect = RRect.fromLTRBR(
+      x - tp.width / 2 - 3,
+      labelY - 2,
+      x + tp.width / 2 + 3,
+      labelY + tp.height + 2,
+      const Radius.circular(2),
+    );
+    canvas.drawRRect(
+      bgRect,
+      Paint()..color = const Color(0xFFFFA500).withValues(alpha: 0.20),
+    );
+    tp.paint(canvas, Offset(x - tp.width / 2, labelY));
   }
 
   void _drawMovingAverageLine(
@@ -529,39 +554,37 @@ class KLinePainter extends CustomPainter {
       final openY = mapY(d.open);
       final closeY = mapY(d.close);
       final bodyTop = min(openY, closeY);
-      final bodyBottom = max(openY, closeY);
-      final bodyHeight = max(bodyBottom - bodyTop, 2.0);
-      final midY = bodyTop + bodyHeight / 2;
+      final bodyBottom = max(
+        openY,
+        closeY,
+      ).clamp(bodyTop + 2.0, double.infinity);
 
-      // 仅年视图绘制 Wick
-      if (viewMode == ChartViewMode.year) {
-        final highY = mapY(d.high);
-        final lowY = mapY(d.low);
-        canvas.drawLine(
-          Offset(x, highY),
-          Offset(x, lowY),
-          Paint()
-            ..color = strokeColor.withValues(alpha: 0.8)
-            ..strokeWidth = 1.5,
-        );
-      }
+      // 绘制上下影线（所有视图）
+      final highY = mapY(d.high);
+      final lowY = mapY(d.low);
+      canvas.drawLine(
+        Offset(x, highY),
+        Offset(x, lowY),
+        Paint()
+          ..color = strokeColor.withValues(alpha: 0.8)
+          ..strokeWidth = 1.5,
+      );
 
-      // 绘制中间菱形
-      final path = Path()
-        ..moveTo(x, bodyTop)
-        ..lineTo(x + cWidth / 2, midY)
-        ..lineTo(x, bodyTop + bodyHeight)
-        ..lineTo(x - cWidth / 2, midY)
-        ..close();
-
-      canvas.drawPath(
-        path,
+      // 绘制矩形蜡烛柱体
+      final bodyRect = Rect.fromLTRB(
+        x - cWidth / 2,
+        bodyTop,
+        x + cWidth / 2,
+        bodyBottom,
+      );
+      canvas.drawRect(
+        bodyRect,
         Paint()
           ..color = bodyColor.withValues(alpha: 0.85)
           ..style = PaintingStyle.fill,
       );
-      canvas.drawPath(
-        path,
+      canvas.drawRect(
+        bodyRect,
         Paint()
           ..color = strokeColor
           ..style = PaintingStyle.stroke
@@ -570,8 +593,8 @@ class KLinePainter extends CustomPainter {
 
       // 高亮选中的蜡烛
       if (selectedIndex == i) {
-        canvas.drawPath(
-          path,
+        canvas.drawRect(
+          bodyRect,
           Paint()
             ..color = Colors.white.withValues(alpha: 0.3)
             ..style = PaintingStyle.fill,

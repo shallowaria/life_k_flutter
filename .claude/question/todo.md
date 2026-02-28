@@ -1,7 +1,7 @@
 # 代码改进 TODO LIST
 
 > 来源：全项目审查报告 `code-review-2026-02-28.md`
-> 进度：6 / 12
+> 进度：10 / 12
 
 ---
 
@@ -23,10 +23,10 @@
 
 ## 🟡 中优先级
 
-- [ ] **#7** `input_screen.dart`（1057行）— 拆分为独立子 Widget：`GenderSelector`、`ShiChenGrid`、`BaziPreview`、`LifeEventsSection`、`AddEventSheet`
-- [ ] **#8** `app_exit_scope.dart` — 将 `static DateTime? _lastPressedAt` 从静态可变状态改为 `StatefulWidget` 实例变量
-- [ ] **#9** 核心模型类 (`KLinePoint` / `AnalysisData` / `LifeDestinyResult` / `UserInput`) — 添加 `Equatable` 或实现 `==` / `hashCode`
-- [ ] **#10** `k_line_painter.dart:663` — 将 `_drawActionAdviceStamps` 循环内的 `maxHigh` 计算提取到循环外
+- [x] **#7** `input_screen.dart`（1057行）— 拆分为独立子 Widget：`GenderSelector`、`ShiChenGrid`、`BaziPreview`、`LifeEventsSection`、`AddEventSheet`
+- [x] **#8** `app_exit_scope.dart` — 将 `static DateTime? _lastPressedAt` 从静态可变状态改为 `StatefulWidget` 实例变量
+- [x] **#9** 核心模型类 (`KLinePoint` / `AnalysisData` / `LifeDestinyResult` / `UserInput`) — 添加 `Equatable` 或实现 `==` / `hashCode`
+- [x] **#10** `k_line_painter.dart:663` — 将 `_drawActionAdviceStamps` 循环内的 `maxHigh` 计算提取到循环外
 
 ---
 

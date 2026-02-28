@@ -347,7 +347,7 @@ class KLineTooltip extends StatelessWidget {
                     ),
                   ),
                   label: Text(
-                    isReady ? '添加到滴答清单 ✔️' : '建议加载中... ❌', // 可选：动态修改文案
+                    isReady ? '添加到滴答清单 ✔️' : '建议加载中...', // 可选：动态修改文案
                     style: const TextStyle(
                       fontSize: 13,
                       fontWeight: FontWeight.w500,

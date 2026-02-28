@@ -649,6 +649,8 @@ class KLinePainter extends CustomPainter {
     double Function(double) mapY,
     double cWidth,
   ) {
+    if (data.isEmpty) return;
+    final maxHigh = data.map((p) => p.high).reduce(max);
     for (var i = 0; i < data.length; i++) {
       if (data[i].actionAdvice == null) continue;
       final d = data[i];
@@ -660,7 +662,6 @@ class KLinePainter extends CustomPainter {
       const fontSize = 9.0;
 
       // Skip if this is the peak (already has seal)
-      final maxHigh = data.map((p) => p.high).reduce(max);
       if (d.high == maxHigh) continue;
 
       final sealRect = RRect.fromRectAndRadius(

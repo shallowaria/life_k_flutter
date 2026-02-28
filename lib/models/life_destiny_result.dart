@@ -1,8 +1,9 @@
+import 'package:equatable/equatable.dart';
 import 'k_line_point.dart';
 import 'analysis_data.dart';
 
 /// Complete destiny result containing chart data and analysis
-class LifeDestinyResult {
+class LifeDestinyResult extends Equatable {
   final List<KLinePoint> chartData;
   final AnalysisData analysis;
 
@@ -21,4 +22,7 @@ class LifeDestinyResult {
     'chartData': chartData.map((e) => e.toJson()).toList(),
     'analysis': analysis.toJson(),
   };
+
+  @override
+  List<Object?> get props => [chartData, analysis];
 }

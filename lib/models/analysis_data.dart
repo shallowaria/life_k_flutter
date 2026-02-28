@@ -1,7 +1,8 @@
+import 'package:equatable/equatable.dart';
 import 'k_line_point.dart';
 
 /// Support/Pressure level for K-line chart reference lines
-class SupportPressureLevel {
+class SupportPressureLevel extends Equatable {
   final int age;
   final String? date;
   final String type; // 'support' or 'pressure'
@@ -44,10 +45,13 @@ class SupportPressureLevel {
     'reason': reason,
     if (tenGod != null) 'tenGod': tenGod!.label,
   };
+
+  @override
+  List<Object?> get props => [age, date, type, value, strength, reason, tenGod];
 }
 
 /// Nine-dimensional analysis data from AI
-class AnalysisData {
+class AnalysisData extends Equatable {
   final List<String> bazi; // [Year, Month, Day, Hour] pillars
   final String summary;
   final double summaryScore;
@@ -157,4 +161,30 @@ class AnalysisData {
           .map((e) => e.toJson())
           .toList(),
   };
+
+  @override
+  List<Object?> get props => [
+    bazi,
+    summary,
+    summaryScore,
+    personality,
+    personalityScore,
+    industry,
+    industryScore,
+    fengShui,
+    fengShuiScore,
+    wealth,
+    wealthScore,
+    marriage,
+    marriageScore,
+    health,
+    healthScore,
+    family,
+    familyScore,
+    crypto,
+    cryptoScore,
+    cryptoYear,
+    cryptoStyle,
+    supportPressureLevels,
+  ];
 }

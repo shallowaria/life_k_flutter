@@ -112,13 +112,25 @@ class _InputScreenState extends State<InputScreen> {
     context.read<DestinyResultBloc>().add(DestinyResultGenerate(userInput));
   }
 
+  void _showAddEventSheet() {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: const Color(0xFFF5F0E8),
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (ctx) => _AddEventSheet(
+        onConfirm: (event) => setState(() => _lifeEvents.add(event)),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return BlocListener<DestinyResultBloc, DestinyResultState>(
       listener: (context, state) {
-        if (state is DestinyResultSuccess) {
-          context.go('/result');
-        }
+        if (state is DestinyResultSuccess) context.go('/result');
       },
       child: Scaffold(
         body: Container(
@@ -259,7 +271,6 @@ class _InputScreenState extends State<InputScreen> {
       child: Column(
         children: [
           const SizedBox(height: 24),
-          // Title
           Text(
             '人生K线图',
             style: Theme.of(context).textTheme.headlineLarge?.copyWith(
@@ -273,8 +284,6 @@ class _InputScreenState extends State<InputScreen> {
             style: TextStyle(fontSize: 16, color: Colors.grey),
           ),
           const SizedBox(height: 32),
-
-          // Form card
           Container(
             padding: const EdgeInsets.all(24),
             decoration: BoxDecoration(
@@ -285,7 +294,6 @@ class _InputScreenState extends State<InputScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // Section title
                 const Center(
                   child: Text(
                     '请输入您的出生信息',
@@ -297,9 +305,7 @@ class _InputScreenState extends State<InputScreen> {
                   ),
                 ),
                 const SizedBox(height: 24),
-
-                // Name
-                _buildSectionLabel('姓名（可选）'),
+                _sectionLabel('姓名（可选）'),
                 const SizedBox(height: 8),
                 TextField(
                   controller: _nameController,
@@ -313,33 +319,17 @@ class _InputScreenState extends State<InputScreen> {
                   ),
                 ),
                 const SizedBox(height: 20),
-
-                // Gender
-                _buildSectionLabel('性别 *'),
+                _sectionLabel('性别 *'),
                 const SizedBox(height: 8),
-                Row(
-                  children: [
-                    Expanded(
-                      child: _buildGenderButton(
-                        '乾造 男',
-                        Gender.male,
-                        const Color(0xFF8B3A3A),
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: _buildGenderButton(
-                        '坤造 女',
-                        Gender.female,
-                        const Color(0xFF4A6A6A),
-                      ),
-                    ),
-                  ],
+                _GenderSelector(
+                  gender: _gender,
+                  onChanged: (g) {
+                    setState(() => _gender = g);
+                    _calculateBazi();
+                  },
                 ),
                 const SizedBox(height: 20),
-
-                // Birth date
-                _buildSectionLabel('出生日期 (公历) *'),
+                _sectionLabel('出生日期 (公历) *'),
                 const SizedBox(height: 8),
                 InkWell(
                   onTap: _onDatePicked,
@@ -374,124 +364,26 @@ class _InputScreenState extends State<InputScreen> {
                   ),
                 ),
                 const SizedBox(height: 20),
-
-                // ShiChen
-                _buildSectionLabel('出生时辰 *'),
+                _sectionLabel('出生时辰 *'),
                 const SizedBox(height: 8),
-                GridView.builder(
-                  shrinkWrap: true,
-                  physics: const NeverScrollableScrollPhysics(),
-                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                    crossAxisCount: 4,
-                    childAspectRatio: 1.2,
-                    crossAxisSpacing: 8,
-                    mainAxisSpacing: 8,
-                  ),
-                  itemCount: shiChenList.length,
-                  itemBuilder: (context, index) {
-                    final sc = shiChenList[index];
-                    final isSelected = _shiChen == sc.name;
-                    return InkWell(
-                      onTap: () {
-                        setState(() => _shiChen = sc.name);
-                        _calculateBazi();
-                      },
-                      child: Container(
-                        decoration: BoxDecoration(
-                          color: isSelected
-                              ? const Color(0xFF8B3A3A)
-                              : Colors.white,
-                          borderRadius: BorderRadius.circular(8),
-                          border: Border.all(
-                            color: isSelected
-                                ? const Color(0xFF5E2626)
-                                : const Color(0xFFC2BBA8),
-                          ),
-                        ),
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Text(
-                              sc.name,
-                              style: TextStyle(
-                                fontSize: 16,
-                                fontWeight: FontWeight.bold,
-                                color: isSelected
-                                    ? Colors.white
-                                    : const Color(0xFF5D4037),
-                              ),
-                            ),
-                            const SizedBox(height: 2),
-                            Text(
-                              sc.range,
-                              style: TextStyle(
-                                fontSize: 10,
-                                color: isSelected
-                                    ? Colors.white70
-                                    : Colors.grey,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    );
+                _ShiChenGrid(
+                  selected: _shiChen,
+                  onChanged: (s) {
+                    setState(() => _shiChen = s);
+                    _calculateBazi();
                   },
                 ),
-
-                // BaZi result
                 if (_calculatedData != null) ...[
+                  _BaziPreviewSection(data: _calculatedData!),
                   const SizedBox(height: 24),
                   const Divider(),
                   const SizedBox(height: 16),
-                  const Center(
-                    child: Text(
-                      '— 八字排盘结果 —',
-                      style: TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
-                        color: Color(0xFF2F4545),
-                      ),
-                    ),
+                  _LifeEventsSection(
+                    events: _lifeEvents,
+                    onAddTap: _showAddEventSheet,
+                    onRemoveAt: (i) => setState(() => _lifeEvents.removeAt(i)),
                   ),
-                  const SizedBox(height: 16),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                    children: [
-                      _buildPillarDisplay('年柱', _calculatedData!.yearPillar),
-                      _buildPillarDisplay('月柱', _calculatedData!.monthPillar),
-                      _buildPillarDisplay('日柱', _calculatedData!.dayPillar),
-                      _buildPillarDisplay('时柱', _calculatedData!.hourPillar),
-                    ],
-                  ),
-                  const SizedBox(height: 16),
-                  Center(
-                    child: RichText(
-                      text: TextSpan(
-                        style: const TextStyle(
-                          fontSize: 16,
-                          color: Color(0xFF5C7A6B),
-                        ),
-                        children: [
-                          const TextSpan(text: '起运年龄  '),
-                          TextSpan(
-                            text: '${_calculatedData!.startAge} 岁',
-                            style: const TextStyle(
-                              fontSize: 24,
-                              fontWeight: FontWeight.bold,
-                              color: Color(0xFFB22222),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 24),
-                  const Divider(),
-                  const SizedBox(height: 16),
-                  _buildLifeEventsSection(),
                 ],
-
-                // Error
                 if (_error != null) ...[
                   const SizedBox(height: 12),
                   Center(
@@ -501,8 +393,6 @@ class _InputScreenState extends State<InputScreen> {
                     ),
                   ),
                 ],
-
-                // Submit
                 const SizedBox(height: 24),
                 SizedBox(
                   width: double.infinity,
@@ -530,7 +420,6 @@ class _InputScreenState extends State<InputScreen> {
               ],
             ),
           ),
-
           const SizedBox(height: 24),
           const Text(
             '本工具仅供娱乐参考，命理分析由 AI 生成，不构成任何投资建议。',
@@ -543,7 +432,7 @@ class _InputScreenState extends State<InputScreen> {
     );
   }
 
-  Widget _buildSectionLabel(String text) {
+  Widget _sectionLabel(String text) {
     return Row(
       children: [
         Container(width: 4, height: 20, color: const Color(0xFFB22222)),
@@ -559,14 +448,33 @@ class _InputScreenState extends State<InputScreen> {
       ],
     );
   }
+}
 
-  Widget _buildGenderButton(String label, Gender gender, Color activeColor) {
-    final isSelected = _gender == gender;
+// ─── Sub-widgets ─────────────────────────────────────────────────────────────
+
+class _GenderSelector extends StatelessWidget {
+  const _GenderSelector({required this.gender, required this.onChanged});
+
+  final Gender gender;
+  final ValueChanged<Gender> onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        Expanded(child: _button('乾造 男', Gender.male, const Color(0xFF8B3A3A))),
+        const SizedBox(width: 12),
+        Expanded(
+          child: _button('坤造 女', Gender.female, const Color(0xFF4A6A6A)),
+        ),
+      ],
+    );
+  }
+
+  Widget _button(String label, Gender value, Color activeColor) {
+    final isSelected = gender == value;
     return InkWell(
-      onTap: () {
-        setState(() => _gender = gender);
-        _calculateBazi();
-      },
+      onTap: () => onChanged(value),
       child: Container(
         padding: const EdgeInsets.symmetric(vertical: 14),
         decoration: BoxDecoration(
@@ -590,8 +498,125 @@ class _InputScreenState extends State<InputScreen> {
       ),
     );
   }
+}
 
-  Widget _buildPillarDisplay(String label, String value) {
+class _ShiChenGrid extends StatelessWidget {
+  const _ShiChenGrid({required this.selected, required this.onChanged});
+
+  final String selected;
+  final ValueChanged<String> onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    return GridView.builder(
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
+      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+        crossAxisCount: 4,
+        childAspectRatio: 1.2,
+        crossAxisSpacing: 8,
+        mainAxisSpacing: 8,
+      ),
+      itemCount: shiChenList.length,
+      itemBuilder: (context, index) {
+        final sc = shiChenList[index];
+        final isSelected = selected == sc.name;
+        return InkWell(
+          onTap: () => onChanged(sc.name),
+          child: Container(
+            decoration: BoxDecoration(
+              color: isSelected ? const Color(0xFF8B3A3A) : Colors.white,
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(
+                color: isSelected
+                    ? const Color(0xFF5E2626)
+                    : const Color(0xFFC2BBA8),
+              ),
+            ),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Text(
+                  sc.name,
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                    color: isSelected ? Colors.white : const Color(0xFF5D4037),
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  sc.range,
+                  style: TextStyle(
+                    fontSize: 10,
+                    color: isSelected ? Colors.white70 : Colors.grey,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+}
+
+class _BaziPreviewSection extends StatelessWidget {
+  const _BaziPreviewSection({required this.data});
+
+  final BaziCalculationResult data;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      children: [
+        const SizedBox(height: 24),
+        const Divider(),
+        const SizedBox(height: 16),
+        const Center(
+          child: Text(
+            '— 八字排盘结果 —',
+            style: TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.bold,
+              color: Color(0xFF2F4545),
+            ),
+          ),
+        ),
+        const SizedBox(height: 16),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+          children: [
+            _pillar('年柱', data.yearPillar),
+            _pillar('月柱', data.monthPillar),
+            _pillar('日柱', data.dayPillar),
+            _pillar('时柱', data.hourPillar),
+          ],
+        ),
+        const SizedBox(height: 16),
+        Center(
+          child: RichText(
+            text: TextSpan(
+              style: const TextStyle(fontSize: 16, color: Color(0xFF5C7A6B)),
+              children: [
+                const TextSpan(text: '起运年龄  '),
+                TextSpan(
+                  text: '${data.startAge} 岁',
+                  style: const TextStyle(
+                    fontSize: 24,
+                    fontWeight: FontWeight.bold,
+                    color: Color(0xFFB22222),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _pillar(String label, String value) {
     return Column(
       children: [
         Text(
@@ -614,8 +639,21 @@ class _InputScreenState extends State<InputScreen> {
       ],
     );
   }
+}
 
-  Widget _buildLifeEventsSection() {
+class _LifeEventsSection extends StatelessWidget {
+  const _LifeEventsSection({
+    required this.events,
+    required this.onAddTap,
+    required this.onRemoveAt,
+  });
+
+  final List<LifeEvent> events;
+  final VoidCallback onAddTap;
+  final ValueChanged<int> onRemoveAt;
+
+  @override
+  Widget build(BuildContext context) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -633,7 +671,7 @@ class _InputScreenState extends State<InputScreen> {
               ),
             ),
             TextButton.icon(
-              onPressed: _showAddEventSheet,
+              onPressed: onAddTap,
               icon: const Icon(Icons.add, size: 18, color: Color(0xFF8B3A3A)),
               label: const Text(
                 '添加事件',
@@ -642,80 +680,11 @@ class _InputScreenState extends State<InputScreen> {
             ),
           ],
         ),
-        if (_lifeEvents.isNotEmpty) ...[
+        if (events.isNotEmpty) ...[
           const SizedBox(height: 8),
-          ..._lifeEvents.asMap().entries.map((entry) {
-            final i = entry.key;
-            final event = entry.value;
-            final isSmooth = event.outcome == EventOutcome.smooth;
-            return Container(
-              margin: const EdgeInsets.only(bottom: 8),
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(8),
-                border: Border.all(color: const Color(0xFFC2BBA8)),
-              ),
-              child: Row(
-                children: [
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 6,
-                      vertical: 2,
-                    ),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFF8B3A3A).withValues(alpha: 0.1),
-                      borderRadius: BorderRadius.circular(4),
-                    ),
-                    child: Text(
-                      event.type.label,
-                      style: const TextStyle(
-                        fontSize: 12,
-                        color: Color(0xFF8B3A3A),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: Text(
-                      '${event.year}年${event.month != null ? '${event.month!.padLeft(2, '0')}月' : ''}  ${event.description}',
-                      style: const TextStyle(fontSize: 14),
-                    ),
-                  ),
-                  const SizedBox(width: 4),
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 6,
-                      vertical: 2,
-                    ),
-                    decoration: BoxDecoration(
-                      color: isSmooth
-                          ? Colors.green.shade50
-                          : Colors.orange.shade50,
-                      borderRadius: BorderRadius.circular(4),
-                    ),
-                    child: Text(
-                      event.outcome.label,
-                      style: TextStyle(
-                        fontSize: 12,
-                        color: isSmooth
-                            ? Colors.green.shade700
-                            : Colors.orange.shade700,
-                      ),
-                    ),
-                  ),
-                  IconButton(
-                    icon: const Icon(Icons.close, size: 18, color: Colors.grey),
-                    padding: EdgeInsets.zero,
-                    constraints: const BoxConstraints(),
-                    onPressed: () {
-                      setState(() => _lifeEvents.removeAt(i));
-                    },
-                  ),
-                ],
-              ),
-            );
-          }),
+          ...events.asMap().entries.map(
+            (entry) => _eventCard(entry.key, entry.value),
+          ),
         ] else ...[
           const SizedBox(height: 4),
           const Text(
@@ -727,309 +696,348 @@ class _InputScreenState extends State<InputScreen> {
     );
   }
 
-  void _showAddEventSheet() {
-    // Local state for the sheet
-    var granularity = 0; // 0=年, 1=年月, 2=年月日
-    final yearCtrl = TextEditingController();
-    final descCtrl = TextEditingController();
-    var selectedMonth = 1;
-    var selectedDay = 1;
-    var selectedType = EventType.career;
-    var selectedOutcome = EventOutcome.smooth;
-
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: const Color(0xFFF5F0E8),
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+  Widget _eventCard(int i, LifeEvent event) {
+    final isSmooth = event.outcome == EventOutcome.smooth;
+    return Container(
+      margin: const EdgeInsets.only(bottom: 8),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: const Color(0xFFC2BBA8)),
       ),
-      builder: (ctx) => StatefulBuilder(
-        builder: (ctx, setSheetState) {
-          return Padding(
-            padding: EdgeInsets.only(
-              left: 20,
-              right: 20,
-              top: 20,
-              bottom: MediaQuery.of(ctx).viewInsets.bottom + 24,
+      child: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+            decoration: BoxDecoration(
+              color: const Color(0xFF8B3A3A).withValues(alpha: 0.1),
+              borderRadius: BorderRadius.circular(4),
             ),
-            child: SingleChildScrollView(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Center(
-                    child: Text(
-                      '添加人生大事',
-                      style: TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
-                        color: Color(0xFF4A3B32),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 20),
-
-                  // Time granularity
-                  const Text(
-                    '时间粒度',
-                    style: TextStyle(
-                      fontWeight: FontWeight.bold,
-                      color: Color(0xFF4A3B32),
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  Row(
-                    children: [
-                      _sheetToggle(
-                        '年',
-                        granularity == 0,
-                        () => setSheetState(() => granularity = 0),
-                      ),
-                      const SizedBox(width: 8),
-                      _sheetToggle(
-                        '年月',
-                        granularity == 1,
-                        () => setSheetState(() => granularity = 1),
-                      ),
-                      const SizedBox(width: 8),
-                      _sheetToggle(
-                        '年月日',
-                        granularity == 2,
-                        () => setSheetState(() => granularity = 2),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 16),
-
-                  // Year
-                  const Text(
-                    '年份 *',
-                    style: TextStyle(
-                      fontWeight: FontWeight.bold,
-                      color: Color(0xFF4A3B32),
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  TextField(
-                    controller: yearCtrl,
-                    keyboardType: TextInputType.number,
-                    decoration: InputDecoration(
-                      hintText: '如 2026',
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      filled: true,
-                      fillColor: Colors.white,
-                      contentPadding: const EdgeInsets.symmetric(
-                        horizontal: 12,
-                        vertical: 10,
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-
-                  // Month
-                  if (granularity >= 1) ...[
-                    const Text(
-                      '月份',
-                      style: TextStyle(
-                        fontWeight: FontWeight.bold,
-                        color: Color(0xFF4A3B32),
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    DropdownButtonFormField<int>(
-                      initialValue: selectedMonth,
-                      decoration: InputDecoration(
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        filled: true,
-                        fillColor: Colors.white,
-                        contentPadding: const EdgeInsets.symmetric(
-                          horizontal: 12,
-                          vertical: 10,
-                        ),
-                      ),
-                      items: List.generate(
-                        12,
-                        (i) => DropdownMenuItem(
-                          value: i + 1,
-                          child: Text('${i + 1} 月'),
-                        ),
-                      ),
-                      onChanged: (v) => setSheetState(() => selectedMonth = v!),
-                    ),
-                    const SizedBox(height: 16),
-                  ],
-
-                  // Day
-                  if (granularity >= 2) ...[
-                    const Text(
-                      '日期',
-                      style: TextStyle(
-                        fontWeight: FontWeight.bold,
-                        color: Color(0xFF4A3B32),
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    DropdownButtonFormField<int>(
-                      initialValue: selectedDay,
-                      decoration: InputDecoration(
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        filled: true,
-                        fillColor: Colors.white,
-                        contentPadding: const EdgeInsets.symmetric(
-                          horizontal: 12,
-                          vertical: 10,
-                        ),
-                      ),
-                      items: List.generate(
-                        31,
-                        (i) => DropdownMenuItem(
-                          value: i + 1,
-                          child: Text('${i + 1} 日'),
-                        ),
-                      ),
-                      onChanged: (v) => setSheetState(() => selectedDay = v!),
-                    ),
-                    const SizedBox(height: 16),
-                  ],
-
-                  // Description
-                  const Text(
-                    '事件描述 *',
-                    style: TextStyle(
-                      fontWeight: FontWeight.bold,
-                      color: Color(0xFF4A3B32),
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  TextField(
-                    controller: descCtrl,
-                    decoration: InputDecoration(
-                      hintText: '如：跳槽、结婚、创业',
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      filled: true,
-                      fillColor: Colors.white,
-                      contentPadding: const EdgeInsets.symmetric(
-                        horizontal: 12,
-                        vertical: 10,
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-
-                  // Event type
-                  const Text(
-                    '事件类型',
-                    style: TextStyle(
-                      fontWeight: FontWeight.bold,
-                      color: Color(0xFF4A3B32),
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  Row(
-                    children: EventType.values
-                        .map(
-                          (t) => Padding(
-                            padding: const EdgeInsets.only(right: 8),
-                            child: _sheetToggle(
-                              t.label,
-                              selectedType == t,
-                              () => setSheetState(() => selectedType = t),
-                            ),
-                          ),
-                        )
-                        .toList(),
-                  ),
-                  const SizedBox(height: 16),
-
-                  // Outcome
-                  const Text(
-                    '结果',
-                    style: TextStyle(
-                      fontWeight: FontWeight.bold,
-                      color: Color(0xFF4A3B32),
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  Row(
-                    children: [
-                      _sheetToggle(
-                        '顺利',
-                        selectedOutcome == EventOutcome.smooth,
-                        () => setSheetState(
-                          () => selectedOutcome = EventOutcome.smooth,
-                        ),
-                      ),
-                      const SizedBox(width: 8),
-                      _sheetToggle(
-                        '不顺',
-                        selectedOutcome == EventOutcome.difficult,
-                        () => setSheetState(
-                          () => selectedOutcome = EventOutcome.difficult,
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 24),
-
-                  // Confirm
-                  SizedBox(
-                    width: double.infinity,
-                    child: ElevatedButton(
-                      onPressed: () {
-                        final year = yearCtrl.text.trim();
-                        final desc = descCtrl.text.trim();
-                        if (year.isEmpty || desc.isEmpty) return;
-                        final event = LifeEvent(
-                          year: year,
-                          month: granularity >= 1
-                              ? selectedMonth.toString().padLeft(2, '0')
-                              : null,
-                          day: granularity >= 2
-                              ? selectedDay.toString().padLeft(2, '0')
-                              : null,
-                          description: desc,
-                          type: selectedType,
-                          outcome: selectedOutcome,
-                        );
-                        setState(() => _lifeEvents.add(event));
-                        Navigator.of(ctx).pop();
-                      },
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFF8B3A3A),
-                        foregroundColor: Colors.white,
-                        padding: const EdgeInsets.symmetric(vertical: 14),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                      ),
-                      child: const Text(
-                        '确认添加',
-                        style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    ),
-                  ),
-                ],
+            child: Text(
+              event.type.label,
+              style: const TextStyle(fontSize: 12, color: Color(0xFF8B3A3A)),
+            ),
+          ),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              '${event.year}年${event.month != null ? '${event.month!.padLeft(2, '0')}月' : ''}  ${event.description}',
+              style: const TextStyle(fontSize: 14),
+            ),
+          ),
+          const SizedBox(width: 4),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+            decoration: BoxDecoration(
+              color: isSmooth ? Colors.green.shade50 : Colors.orange.shade50,
+              borderRadius: BorderRadius.circular(4),
+            ),
+            child: Text(
+              event.outcome.label,
+              style: TextStyle(
+                fontSize: 12,
+                color: isSmooth
+                    ? Colors.green.shade700
+                    : Colors.orange.shade700,
               ),
             ),
-          );
-        },
+          ),
+          IconButton(
+            icon: const Icon(Icons.close, size: 18, color: Colors.grey),
+            padding: EdgeInsets.zero,
+            constraints: const BoxConstraints(),
+            onPressed: () => onRemoveAt(i),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _AddEventSheet extends StatefulWidget {
+  const _AddEventSheet({required this.onConfirm});
+
+  final ValueChanged<LifeEvent> onConfirm;
+
+  @override
+  State<_AddEventSheet> createState() => _AddEventSheetState();
+}
+
+class _AddEventSheetState extends State<_AddEventSheet> {
+  final _yearCtrl = TextEditingController();
+  final _descCtrl = TextEditingController();
+  int _granularity = 0; // 0=年, 1=年月, 2=年月日
+  int _selectedMonth = 1;
+  int _selectedDay = 1;
+  EventType _selectedType = EventType.career;
+  EventOutcome _selectedOutcome = EventOutcome.smooth;
+
+  @override
+  void dispose() {
+    _yearCtrl.dispose();
+    _descCtrl.dispose();
+    super.dispose();
+  }
+
+  void _onConfirm() {
+    final year = _yearCtrl.text.trim();
+    final desc = _descCtrl.text.trim();
+    if (year.isEmpty || desc.isEmpty) return;
+    widget.onConfirm(
+      LifeEvent(
+        year: year,
+        month: _granularity >= 1
+            ? _selectedMonth.toString().padLeft(2, '0')
+            : null,
+        day: _granularity >= 2 ? _selectedDay.toString().padLeft(2, '0') : null,
+        description: desc,
+        type: _selectedType,
+        outcome: _selectedOutcome,
+      ),
+    );
+    Navigator.of(context).pop();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: EdgeInsets.only(
+        left: 20,
+        right: 20,
+        top: 20,
+        bottom: MediaQuery.of(context).viewInsets.bottom + 24,
+      ),
+      child: SingleChildScrollView(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Center(
+              child: Text(
+                '添加人生大事',
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                  color: Color(0xFF4A3B32),
+                ),
+              ),
+            ),
+            const SizedBox(height: 20),
+            const Text(
+              '时间粒度',
+              style: TextStyle(
+                fontWeight: FontWeight.bold,
+                color: Color(0xFF4A3B32),
+              ),
+            ),
+            const SizedBox(height: 8),
+            Row(
+              children: [
+                _toggle(
+                  '年',
+                  _granularity == 0,
+                  () => setState(() => _granularity = 0),
+                ),
+                const SizedBox(width: 8),
+                _toggle(
+                  '年月',
+                  _granularity == 1,
+                  () => setState(() => _granularity = 1),
+                ),
+                const SizedBox(width: 8),
+                _toggle(
+                  '年月日',
+                  _granularity == 2,
+                  () => setState(() => _granularity = 2),
+                ),
+              ],
+            ),
+            const SizedBox(height: 16),
+            const Text(
+              '年份 *',
+              style: TextStyle(
+                fontWeight: FontWeight.bold,
+                color: Color(0xFF4A3B32),
+              ),
+            ),
+            const SizedBox(height: 8),
+            TextField(
+              controller: _yearCtrl,
+              keyboardType: TextInputType.number,
+              decoration: InputDecoration(
+                hintText: '如 2026',
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                filled: true,
+                fillColor: Colors.white,
+                contentPadding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 10,
+                ),
+              ),
+            ),
+            const SizedBox(height: 16),
+            if (_granularity >= 1) ...[
+              const Text(
+                '月份',
+                style: TextStyle(
+                  fontWeight: FontWeight.bold,
+                  color: Color(0xFF4A3B32),
+                ),
+              ),
+              const SizedBox(height: 8),
+              DropdownButtonFormField<int>(
+                initialValue: _selectedMonth,
+                decoration: InputDecoration(
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  filled: true,
+                  fillColor: Colors.white,
+                  contentPadding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 10,
+                  ),
+                ),
+                items: List.generate(
+                  12,
+                  (i) =>
+                      DropdownMenuItem(value: i + 1, child: Text('${i + 1} 月')),
+                ),
+                onChanged: (v) => setState(() => _selectedMonth = v!),
+              ),
+              const SizedBox(height: 16),
+            ],
+            if (_granularity >= 2) ...[
+              const Text(
+                '日期',
+                style: TextStyle(
+                  fontWeight: FontWeight.bold,
+                  color: Color(0xFF4A3B32),
+                ),
+              ),
+              const SizedBox(height: 8),
+              DropdownButtonFormField<int>(
+                initialValue: _selectedDay,
+                decoration: InputDecoration(
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  filled: true,
+                  fillColor: Colors.white,
+                  contentPadding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 10,
+                  ),
+                ),
+                items: List.generate(
+                  31,
+                  (i) =>
+                      DropdownMenuItem(value: i + 1, child: Text('${i + 1} 日')),
+                ),
+                onChanged: (v) => setState(() => _selectedDay = v!),
+              ),
+              const SizedBox(height: 16),
+            ],
+            const Text(
+              '事件描述 *',
+              style: TextStyle(
+                fontWeight: FontWeight.bold,
+                color: Color(0xFF4A3B32),
+              ),
+            ),
+            const SizedBox(height: 8),
+            TextField(
+              controller: _descCtrl,
+              decoration: InputDecoration(
+                hintText: '如：跳槽、结婚、创业',
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                filled: true,
+                fillColor: Colors.white,
+                contentPadding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 10,
+                ),
+              ),
+            ),
+            const SizedBox(height: 16),
+            const Text(
+              '事件类型',
+              style: TextStyle(
+                fontWeight: FontWeight.bold,
+                color: Color(0xFF4A3B32),
+              ),
+            ),
+            const SizedBox(height: 8),
+            Row(
+              children: EventType.values
+                  .map(
+                    (t) => Padding(
+                      padding: const EdgeInsets.only(right: 8),
+                      child: _toggle(
+                        t.label,
+                        _selectedType == t,
+                        () => setState(() => _selectedType = t),
+                      ),
+                    ),
+                  )
+                  .toList(),
+            ),
+            const SizedBox(height: 16),
+            const Text(
+              '结果',
+              style: TextStyle(
+                fontWeight: FontWeight.bold,
+                color: Color(0xFF4A3B32),
+              ),
+            ),
+            const SizedBox(height: 8),
+            Row(
+              children: [
+                _toggle(
+                  '顺利',
+                  _selectedOutcome == EventOutcome.smooth,
+                  () => setState(() => _selectedOutcome = EventOutcome.smooth),
+                ),
+                const SizedBox(width: 8),
+                _toggle(
+                  '不顺',
+                  _selectedOutcome == EventOutcome.difficult,
+                  () =>
+                      setState(() => _selectedOutcome = EventOutcome.difficult),
+                ),
+              ],
+            ),
+            const SizedBox(height: 24),
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton(
+                onPressed: _onConfirm,
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFF8B3A3A),
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(vertical: 14),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
+                child: const Text(
+                  '确认添加',
+                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                ),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
 
-  Widget _sheetToggle(String label, bool selected, VoidCallback onTap) {
+  Widget _toggle(String label, bool selected, VoidCallback onTap) {
     return InkWell(
       onTap: onTap,
       borderRadius: BorderRadius.circular(8),

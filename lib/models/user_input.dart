@@ -1,3 +1,4 @@
+import 'package:equatable/equatable.dart';
 import 'life_event.dart';
 
 /// Gender type
@@ -12,7 +13,7 @@ enum Gender {
 }
 
 /// User input data for BaZi calculation
-class UserInput {
+class UserInput extends Equatable {
   final String? name;
   final Gender gender;
   final String birthYear;
@@ -93,4 +94,18 @@ class UserInput {
       lifeEvents: lifeEvents ?? this.lifeEvents,
     );
   }
+
+  @override
+  List<Object?> get props => [
+    name,
+    gender,
+    birthYear,
+    birthDate,
+    yearPillar,
+    monthPillar,
+    dayPillar,
+    hourPillar,
+    startAge,
+    lifeEvents,
+  ];
 }

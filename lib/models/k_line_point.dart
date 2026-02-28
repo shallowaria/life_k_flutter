@@ -1,3 +1,5 @@
+import 'package:equatable/equatable.dart';
+
 /// Ten Gods (十神) type used for identifying auspicious/inauspicious influences
 enum TenGod {
   biJian('比肩'),
@@ -24,7 +26,7 @@ enum TenGod {
 }
 
 /// Energy score breakdown
-class EnergyScore {
+class EnergyScore extends Equatable {
   final double total; // 0-10
   final double monthCoefficient;
   final double dayRelation;
@@ -56,10 +58,19 @@ class EnergyScore {
     'hourFluctuation': hourFluctuation,
     'isBelowSupport': isBelowSupport,
   };
+
+  @override
+  List<Object?> get props => [
+    total,
+    monthCoefficient,
+    dayRelation,
+    hourFluctuation,
+    isBelowSupport,
+  ];
 }
 
 /// Action advice for key years
-class ActionAdvice {
+class ActionAdvice extends Equatable {
   final List<String> suggestions; // 3 suggestions
   final List<String> warnings; // 2 warnings
   final String? basis;
@@ -87,10 +98,13 @@ class ActionAdvice {
     if (basis != null) 'basis': basis,
     if (scenario != null) 'scenario': scenario,
   };
+
+  @override
+  List<Object?> get props => [suggestions, warnings, basis, scenario];
 }
 
 /// Single K-line data point representing one year of life fortune
-class KLinePoint {
+class KLinePoint extends Equatable {
   final int age;
   final int year;
   final String ganZhi; // 流年干支
@@ -160,4 +174,21 @@ class KLinePoint {
     if (energyScore != null) 'energyScore': energyScore!.toJson(),
     if (actionAdvice != null) 'actionAdvice': actionAdvice!.toJson(),
   };
+
+  @override
+  List<Object?> get props => [
+    age,
+    year,
+    ganZhi,
+    daYun,
+    open,
+    close,
+    high,
+    low,
+    score,
+    reason,
+    tenGod,
+    energyScore,
+    actionAdvice,
+  ];
 }

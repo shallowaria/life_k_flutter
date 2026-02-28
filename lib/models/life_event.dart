@@ -1,3 +1,5 @@
+import 'package:equatable/equatable.dart';
+
 enum EventType { career, wealth, romance, health }
 
 enum EventOutcome { smooth, difficult }
@@ -32,7 +34,7 @@ extension EventOutcomeLabel on EventOutcome {
   String get value => name;
 }
 
-class LifeEvent {
+class LifeEvent extends Equatable {
   final String year;
   final String? month;
   final String? day;
@@ -102,4 +104,7 @@ class LifeEvent {
         : '$year年';
     return '$datePart | ${type.label} | $description | 结果：${outcome.label}';
   }
+
+  @override
+  List<Object?> get props => [year, month, day, description, type, outcome];
 }

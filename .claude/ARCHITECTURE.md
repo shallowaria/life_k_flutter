@@ -1,6 +1,6 @@
 # life_k 项目架构文档
 
-> 生成日期：2026-02-23
+> 生成日期：2026-02-28
 > Flutter 版本：Dart SDK `^3.10.7`
 
 ---
@@ -14,21 +14,22 @@ life_k/
 │   ├── ARCHITECTURE.md        # 本文件：详细架构参考
 │   └── rules_4k.md            # AI 编码规范
 ├── lib/
-│   ├── main.dart              # 应用入口：BLoC 注册、路由、主题
+│   ├── main.dart              # 应用入口：服务实例化、BLoC+RepositoryProvider 注册、路由、主题
 │   ├── core/
 │   │   └── config/
 │   │       └── env.dart       # 环境配置（API URL / Token / Model）
-│   ├── models/                # 数据模型层
+│   ├── models/                # 数据模型层（均继承 Equatable）
 │   │   ├── user_input.dart
 │   │   ├── k_line_point.dart
 │   │   ├── analysis_data.dart
 │   │   ├── life_destiny_result.dart
 │   │   └── life_event.dart
-│   ├── services/              # 业务逻辑层
+│   ├── services/              # 业务逻辑层（无 UI 依赖）
 │   │   ├── bazi_calculator.dart
 │   │   ├── destiny_api_service.dart
 │   │   ├── storage_service.dart
-│   │   └── kline_interpolation_service.dart
+│   │   ├── kline_interpolation_service.dart
+│   │   └── tick_tick_service.dart
 │   ├── blocs/                 # 状态管理层（BLoC）
 │   │   ├── user_input/
 │   │   │   ├── user_input_bloc.dart
@@ -38,21 +39,36 @@ life_k/
 │   │       ├── destiny_result_bloc.dart
 │   │       ├── destiny_result_event.dart
 │   │       └── destiny_result_state.dart
-│   ├── screens/               # UI 页面层
-│   │   ├── input_screen.dart
+│   ├── screens/               # UI 页面层（通过 BLoC/RepositoryProvider 通信）
+│   │   ├── input_screen.dart  # ~430行，含5个私有子 Widget 类
 │   │   └── result_screen.dart
 │   ├── widgets/               # 可复用组件层
-│   │   └── k_line_chart/
-│   │       ├── k_line_chart.dart
-│   │       ├── k_line_painter.dart
-│   │       ├── k_line_tooltip.dart
-│   │       └── chart_view_mode.dart
+│   │   ├── k_line_chart/
+│   │   │   ├── k_line_chart.dart
+│   │   │   ├── k_line_painter.dart
+│   │   │   ├── k_line_tooltip.dart
+│   │   │   └── chart_view_mode.dart
+│   │   ├── app_exit_scope.dart    # StatefulWidget：双击返回退出（实例变量，非 static）
+│   │   └── exit_tip_overlay.dart  # 退出提示浮层
 │   ├── constants/             # 常量与提示词
 │   │   ├── shi_chen.dart
 │   │   └── bazi_prompt.dart
-│   └── utils/                 # 工具函数
+│   └── utils/                 # 工具函数（纯函数，无 UI/Service 依赖）
 │       ├── score_normalizer.dart
 │       └── validators.dart
+├── test/
+│   ├── blocs/
+│   │   ├── destiny_result_bloc_test.dart
+│   │   └── user_input_bloc_test.dart
+│   ├── services/
+│   │   ├── bazi_calculator_test.dart
+│   │   ├── kline_interpolation_service_test.dart
+│   │   └── tick_tick_service_test.dart
+│   ├── utils/
+│   │   ├── score_normalizer_test.dart
+│   │   └── validators_test.dart
+│   └── widgets/
+│       └── k_line_tooltip_test.dart
 ├── assets/
 │   └── images/                # App 图标
 ├── android/                   # Android 构建配置
@@ -136,6 +152,8 @@ ResultScreen
 ---
 
 ## 数据模型
+
+> 所有模型类均继承 `Equatable`，通过 `props` 实现值相等比较，确保 BLoC 状态变更检测正确工作。
 
 ### UserInput
 
@@ -221,11 +239,13 @@ class LifeEvent {
 ### DestinyApiService
 
 - 调用 Anthropic Messages API（`/v1/messages`）
+- **实例化**：在 `main()` 中创建，通过 `RepositoryProvider` 暴露；**不得**在 `build()` 内重复创建
 - **`_retryPost()`**：私有统一重试方法，两个公开方法均委托于此
   - 最多 5 次重试
   - 4xx → 立即抛出（客户端错误）
   - 5xx → 指数退避（5s × attempt）
   - AI 拒绝文本 → `_isAiRefusal()` 关键词检测，3s 后重试
+  - 非 Exception 类错误（如 `Error` 子类）→ `Error.throwWithStackTrace` 保留原始堆栈立即抛出
 - **`generateDestiny()`**：生成30年运势 JSON，解析后包 try-catch
 - **`generateDailyAdvice()`**：
   - 先调用 `KLineInterpolationService` 插值至日级
@@ -234,6 +254,7 @@ class LifeEvent {
   - 解析段包 try-catch，失败抛带描述的 Exception
 - 响应解析：提取文本块 → 清理 Markdown → 解析 JSON → 归一化分数
 - System prompt 将任务框架定义为"JSON 数据生成引擎"以规避 AI 安全拒绝
+- `getDaYunDirection()` 为**全局函数**（位于 `bazi_calculator.dart`），不重复定义
 
 ### StorageService
 
@@ -331,16 +352,16 @@ enum ChartViewMode { year, month, day }
 
 ```dart
 double normalizeScore(double score) {
-  // 若分数 > 10，视为0-100制，除以10取整
-  if (score > 10) return (score / 10).roundToDouble();
-  return score;
+  // 若分数 > 10，视为0-100制，除以10后钳制到 [0, 10]
+  if (score > 10) return (score / 10).clamp(0.0, 10.0);
+  return score.clamp(0.0, 10.0);
 }
 ```
 
 ### validators.dart
 
-- `validateChartData(List<KLinePoint>)`：验证30个点、OHLC约束（high ≥ max(O,C)，low ≤ min(O,C)）、分值0-10
-- `validateBaziInput(UserInput)`：四柱汉字校验、起运年龄0-10
+- `validateChartData(Map<String, dynamic>)`：验证30个点、OHLC约束（high ≥ max(O,C)，low ≤ min(O,C)）、分值0-10、age 1-30
+- `validateBaziInput({...})`：四柱汉字校验（正则 `^[\u4e00-\u9fa5]{2}$`）、起运年龄0-10
 
 ---
 
@@ -364,20 +385,22 @@ class Env {
 
 ## 依赖一览
 
-| 包                       | 版本    | 用途              |
-| ------------------------ | ------- | ----------------- |
-| `flutter_bloc`           | ^9.1.0  | BLoC 状态管理     |
-| `bloc`                   | ^9.0.0  | BLoC 核心         |
-| `dio`                    | ^5.8.0  | HTTP 客户端       |
-| `go_router`              | ^15.1.2 | 声明式路由        |
-| `lunar`                  | ^1.3.20 | 农历/八字计算     |
-| `shared_preferences`     | ^2.5.3  | 本地 KV 存储      |
-| `equatable`              | ^2.0.7  | BLoC 值相等       |
-| `intl`                   | ^0.20.2 | 国际化            |
-| `flutter_dotenv`         | ^6.0.0  | .env 环境变量加载 |
-| `url_launcher`           | ^6.3.1  | 外部链接跳转      |
-| `flutter_launcher_icons` | ^0.14.4 | 图标生成（dev）   |
-| `flutter_lints`          | ^6.0.0  | 代码规范（dev）   |
+| 包                       | 版本     | 用途              |
+| ------------------------ | -------- | ----------------- |
+| `flutter_bloc`           | ^9.1.0   | BLoC 状态管理     |
+| `bloc`                   | ^9.0.0   | BLoC 核心         |
+| `dio`                    | ^5.8.0   | HTTP 客户端       |
+| `go_router`              | ^15.1.2  | 声明式路由        |
+| `lunar`                  | ^1.3.20  | 农历/八字计算     |
+| `shared_preferences`     | ^2.5.3   | 本地 KV 存储      |
+| `equatable`              | ^2.0.7   | 值相等（BLoC + 模型）|
+| `intl`                   | ^0.20.2  | 国际化            |
+| `flutter_dotenv`         | ^6.0.0   | .env 环境变量加载 |
+| `url_launcher`           | ^6.3.1   | 外部链接跳转      |
+| `flutter_launcher_icons` | ^0.14.4  | 图标生成（dev）   |
+| `flutter_lints`          | ^6.0.0   | 代码规范（dev）   |
+| `bloc_test`              | ^10.0.0  | BLoC 流测试（dev）|
+| `mocktail`               | ^1.0.4   | 零代码生成 Mock（dev）|
 
 ---
 
@@ -389,3 +412,5 @@ class Env {
 4. **严格 JSON 校验**：`validateChartData` 在渲染前校验 OHLC 约束，防止 API 返回异常数据导致图表崩溃。
 5. **中国美学渲染**：朱砂红/藏青色系 + 菱形蜡烛 + 篆印风格印章，强化文化调性。
 6. **多语言支持**：flutter_localizations 注册 zh_CN + en_US，当前界面以中文为主。
+7. **服务单例**：`StorageService` / `DestinyApiService` 在 `main()` 中仅实例化一次，经 `RepositoryProvider` 注入；BLoC 类不暴露 Service 公开 getter。
+8. **分层严格性**：`lib/utils/` 只含纯函数；退出手势等 UI 相关逻辑放在 `lib/widgets/`，不放在 `utils/`。

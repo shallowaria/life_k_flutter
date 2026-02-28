@@ -58,7 +58,7 @@ InputScreen → BaziCalculator.calculate() → UserInput model
 | Services  | `lib/services/`             | `BaziCalculator` — static Four Pillars computation via `lunar` library; `DestinyApiService` — Anthropic API with shared `_retryPost` (5 attempts, AI-refusal detection, exponential back-off, 60s connect / 300s receive timeout); `StorageService` — SharedPreferences persistence |
 | BLoCs     | `lib/blocs/`                | `user_input/` and `destiny_result/` each with event/state/bloc files                                                                                                                                                                                                                |
 | Screens   | `lib/screens/`              | `InputScreen` (birth form + ShiChen grid + live pillar preview), `ResultScreen` (chart + 9D analysis cards + action advice)                                                                                                                                                         |
-| Widgets   | `lib/widgets/k_line_chart/` | `KLineChart` (interactive tap + tooltip overlay), `KLinePainter` (CustomPainter with diamond candles, MA10 line, support/pressure levels, Da Yun separators), `KLineTooltip` (detailed popup)                                                                                       |
+| Widgets   | `lib/widgets/`              | `k_line_chart/` — `KLineChart`（交互+tooltip）、`KLinePainter`（CustomPainter：菱形蜡烛、MA10、支撑压力线、大运分隔）、`KLineTooltip`（详情弹层）；`app_exit_scope.dart`（StatefulWidget 双击返回退出）；`exit_tip_overlay.dart`（退出提示浮层） |
 | Constants | `lib/constants/`            | `shi_chen.dart` (12 traditional double-hour periods with conversion functions), `bazi_prompt.dart` (AI system prompt defining analysis rules)                                                                                                                                       |
 | Utils     | `lib/utils/`                | `score_normalizer.dart` (clamp 0-10), `validators.dart` (chart data + BaZi input validation)                                                                                                                                                                                        |
 
@@ -73,8 +73,13 @@ GoRouter with two routes: `/input` (initial) and `/result`.
 - **4xx errors** — immediate rethrow, no retry
 - **5xx errors** — exponential back-off (5s × attempt)
 - **AI refusal text** — detected via `_isAiRefusal()` keyword check, retried with 3s delay
+- **Non-Exception errors** — immediately re-thrown via `Error.throwWithStackTrace` with original stack trace preserved
 
 Config is loaded from `.env` via `flutter_dotenv` (see `lib/core/config/env.dart`). The `.env` file must exist at the project root and is declared as a Flutter asset.
+
+### Service Injection
+
+Services are instantiated **once in `main()`** and passed to `LifeKApp` as constructor parameters. They are exposed via `RepositoryProvider` for access in screens (e.g. `context.read<DestinyApiService>()`). BLoC classes do **not** expose public service getters.
 
 ### Chart Rendering
 
@@ -87,9 +92,14 @@ Config is loaded from `.env` via `flutter_dotenv` (see `lib/core/config/env.dart
 - **go_router** — Declarative routing
 - **lunar** — Chinese calendar / BaZi calculation
 - **shared_preferences** — Local key-value storage
-- **equatable** — Value equality for BLoC states/events
+- **equatable** — Value equality for BLoC states/events and all model classes
 - **flutter_dotenv** — Runtime `.env` file loading for API config
 - **url_launcher** — External URL launching
+
+### Dev Dependencies
+
+- **bloc_test** — BLoC state stream testing
+- **mocktail** — Zero-codegen mocking for unit tests
 
 ##SDK
 

@@ -1,7 +1,7 @@
 # 代码改进 TODO LIST
 
 > 来源：全项目审查报告 `code-review-2026-02-28.md`
-> 进度：10 / 12
+> 进度：12 / 12 ✅
 
 ---
 
@@ -32,5 +32,5 @@
 
 ## 🔵 低优先级
 
-- [ ] **#11** `destiny_api_service.dart:129` — `catch` 块中使用 `Error.throwWithStackTrace` 保留原始 stack trace
-- [ ] **#12** 补充单元测试：`score_normalizer`、`validators`、`BaziCalculator`、`KLineInterpolationService`、`DestinyResultBloc`、`UserInputBloc`
+- [x] **#11** `destiny_api_service.dart:129` — `catch` 块中使用 `Error.throwWithStackTrace` 保留原始 stack trace
+- [x] **#12** 补充单元测试：`score_normalizer`、`validators`、`BaziCalculator`、`KLineInterpolationService`、`DestinyResultBloc`、`UserInputBloc`

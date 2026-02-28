@@ -126,9 +126,9 @@ class DestinyApiService {
         if (attempt < maxRetries) {
           await Future.delayed(Duration(seconds: 5 * attempt));
         }
-      } catch (e) {
+      } catch (e, st) {
         if (e is Exception) rethrow; // 4xx: bubble up immediately
-        lastError = Exception(e.toString());
+        Error.throwWithStackTrace(Exception(e.toString()), st);
       }
     }
 

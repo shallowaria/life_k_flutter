@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:go_router/go_router.dart';
 import 'exit_tip_overlay.dart';
 
 class AppExitScope extends StatefulWidget {
@@ -25,13 +24,7 @@ class _AppExitScopeState extends State<AppExitScope> {
         // didPop 为 true 表示路由已经成功出栈（系统已经处理了），就不需要我们管了
         if (didPop) return;
 
-        // 1. 如果 GoRouter 还有路由可 pop（比如在 /result 页面），交还给它处理，回到 /input
-        if (GoRouter.of(context).canPop()) {
-          GoRouter.of(context).pop();
-          return;
-        }
-
-        // 2. 已在根页面，开始处理防误触退出逻辑
+        // 已在根页面，开始处理防误触退出逻辑
         final now = DateTime.now();
         if (_lastPressedAt == null ||
             now.difference(_lastPressedAt!) >

@@ -99,18 +99,13 @@ class LifeKApp extends StatelessWidget {
   static final _router = GoRouter(
     initialLocation: '/input',
     routes: [
-      ShellRoute(
-        builder: (context, state, child) => AppExitScope(child: child),
-        routes: [
-          GoRoute(
-            path: '/input',
-            builder: (context, state) => const InputScreen(),
-          ),
-          GoRoute(
-            path: '/result',
-            builder: (context, state) => const ResultScreen(),
-          ),
-        ],
+      GoRoute(
+        path: '/input',
+        builder: (context, state) => const AppExitScope(child: InputScreen()),
+      ),
+      GoRoute(
+        path: '/result',
+        builder: (context, state) => const ResultScreen(),
       ),
     ],
   );

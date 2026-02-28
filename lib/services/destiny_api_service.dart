@@ -6,6 +6,7 @@ import '../models/k_line_point.dart';
 import '../models/analysis_data.dart';
 import '../constants/bazi_prompt.dart';
 import '../utils/score_normalizer.dart';
+import 'bazi_calculator.dart' show getDaYunDirection;
 
 /// Thrown when the AI returns a refusal instead of JSON.
 class _AiRefusalException implements Exception {
@@ -87,8 +88,9 @@ class DestinyApiService {
         final content = response.data['content'] as List?;
         if (content == null || content.isEmpty) {
           lastError = Exception('AI 返回格式错误：content 为空');
-          if (attempt < maxRetries)
+          if (attempt < maxRetries) {
             await Future.delayed(const Duration(seconds: 2));
+          }
           continue;
         }
 
@@ -98,24 +100,27 @@ class DestinyApiService {
         );
         if (textBlock == null) {
           lastError = Exception('AI 返回格式错误：未找到文本内容');
-          if (attempt < maxRetries)
+          if (attempt < maxRetries) {
             await Future.delayed(const Duration(seconds: 2));
+          }
           continue;
         }
 
         final text = (textBlock['text'] as String).trim();
         if (_isAiRefusal(text)) {
           lastError = _AiRefusalException('AI 拒绝生成（第 $attempt 次），正在重试...');
-          if (attempt < maxRetries)
+          if (attempt < maxRetries) {
             await Future.delayed(const Duration(seconds: 3));
+          }
           continue;
         }
 
         return response.data;
       } on _AiRefusalException catch (e) {
         lastError = e;
-        if (attempt < maxRetries)
+        if (attempt < maxRetries) {
           await Future.delayed(const Duration(seconds: 3));
+        }
       } on DioException catch (e) {
         lastError = e;
         if (attempt < maxRetries) {
@@ -158,7 +163,7 @@ class DestinyApiService {
   // ---------------------------------------------------------------------------
 
   String _generateUserPrompt(UserInput input) {
-    final direction = _getDaYunDirection(input.yearPillar, input.gender);
+    final direction = getDaYunDirection(input.yearPillar, input.gender);
     final genderText = input.gender == Gender.male ? '乾造（男）' : '坤造（女）';
 
     return '''**输入参数（干支数据）:**
@@ -177,17 +182,6 @@ ${_buildLifeEventsSection(input)}
         .map((e) => '- ${e.toPromptString()}')
         .join('\n');
     return '\n## 用户过往人生大事（请据此校准运势模型）\n$lines\n';
-  }
-
-  ({bool isForward, String text}) _getDaYunDirection(
-    String yearPillar,
-    Gender gender,
-  ) {
-    final firstChar = yearPillar.trim().isNotEmpty ? yearPillar.trim()[0] : '';
-    const yangStems = ['甲', '丙', '戊', '庚', '壬'];
-    final isYangYear = yangStems.contains(firstChar);
-    final isForward = gender == Gender.male ? isYangYear : !isYangYear;
-    return (isForward: isForward, text: isForward ? '顺行' : '逆行');
   }
 
   /// Generate 30-year destiny data for [input].

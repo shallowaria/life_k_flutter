@@ -33,8 +33,7 @@ class StorageService {
     final prefs = await SharedPreferences.getInstance();
     final str = prefs.getString(_lifeDestinyResultKey);
     if (str == null) return null;
-    return LifeDestinyResult.fromJson(
-        jsonDecode(str) as Map<String, dynamic>);
+    return LifeDestinyResult.fromJson(jsonDecode(str) as Map<String, dynamic>);
   }
 
   // Save user name

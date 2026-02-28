@@ -11,32 +11,33 @@ import 'blocs/destiny_result/destiny_result_bloc.dart';
 import 'blocs/destiny_result/destiny_result_event.dart';
 import 'screens/input_screen.dart';
 import 'screens/result_screen.dart';
-import 'package:flutter/services.dart';
-import 'utils/exit_tip_overlay.dart';
+import 'widgets/app_exit_scope.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await dotenv.load(fileName: '.env');
-  runApp(const LifeKApp());
+  final storageService = StorageService();
+  final apiService = DestinyApiService(
+    baseUrl: Env.baseUrl,
+    authToken: Env.authToken,
+    model: Env.model,
+  );
+  runApp(LifeKApp(storageService: storageService, apiService: apiService));
 }
 
 class LifeKApp extends StatelessWidget {
-  const LifeKApp({super.key});
+  const LifeKApp({
+    super.key,
+    required this.storageService,
+    required this.apiService,
+  });
 
-  static DateTime? _lastPressedAt;
-  static final int _pressContinuetime = 4;
+  final StorageService storageService;
+  final DestinyApiService apiService;
 
   @override
   Widget build(BuildContext context) {
-    final storageService = StorageService();
-
-    final apiService = DestinyApiService(
-      baseUrl: Env.baseUrl,
-      authToken: Env.authToken,
-      model: Env.model,
-    );
-
     return MultiRepositoryProvider(
       providers: [
         RepositoryProvider.value(value: storageService),
@@ -98,31 +99,18 @@ class LifeKApp extends StatelessWidget {
   static final _router = GoRouter(
     initialLocation: '/input',
     routes: [
-      GoRoute(
-        path: '/input',
-        builder: (context, state) => PopScope(
-          canPop: false, // 拦截返回键
-          onPopInvokedWithResult: (didPop, result) async {
-            if (didPop) return;
-
-            final now = DateTime.now();
-            // 判断两次点击间隔是否超过 4 秒
-            if (_lastPressedAt == null ||
-                now.difference(_lastPressedAt!) >
-                    Duration(seconds: _pressContinuetime)) {
-              _lastPressedAt = now; // 更新时间
-              ExitTipOverlay.show(context); // 调用刚才定义的工具类显示提示
-            } else {
-              // 4秒内第二次点击，直接退出
-              SystemNavigator.pop();
-            }
-          },
-          child: const InputScreen(),
-        ),
-      ),
-      GoRoute(
-        path: '/result',
-        builder: (context, state) => const ResultScreen(),
+      ShellRoute(
+        builder: (context, state, child) => AppExitScope(child: child),
+        routes: [
+          GoRoute(
+            path: '/input',
+            builder: (context, state) => const InputScreen(),
+          ),
+          GoRoute(
+            path: '/result',
+            builder: (context, state) => const ResultScreen(),
+          ),
+        ],
       ),
     ],
   );

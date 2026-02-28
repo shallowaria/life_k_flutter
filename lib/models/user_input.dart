@@ -55,18 +55,18 @@ class UserInput {
   }
 
   Map<String, dynamic> toJson() => {
-        if (name != null) 'name': name,
-        'gender': gender.value,
-        'birthYear': birthYear,
-        if (birthDate != null) 'birthDate': birthDate,
-        'yearPillar': yearPillar,
-        'monthPillar': monthPillar,
-        'dayPillar': dayPillar,
-        'hourPillar': hourPillar,
-        'startAge': startAge,
-        if (lifeEvents != null && lifeEvents!.isNotEmpty)
-          'lifeEvents': lifeEvents!.map((e) => e.toJson()).toList(),
-      };
+    if (name != null) 'name': name,
+    'gender': gender.value,
+    'birthYear': birthYear,
+    if (birthDate != null) 'birthDate': birthDate,
+    'yearPillar': yearPillar,
+    'monthPillar': monthPillar,
+    'dayPillar': dayPillar,
+    'hourPillar': hourPillar,
+    'startAge': startAge,
+    if (lifeEvents != null && lifeEvents!.isNotEmpty)
+      'lifeEvents': lifeEvents!.map((e) => e.toJson()).toList(),
+  };
 
   UserInput copyWith({
     String? name,

@@ -38,8 +38,8 @@ String? validateChartData(Map<String, dynamic> data) {
       return 'chartData[$i] 缺少 OHLC 数据';
     }
 
-    if (open < 0 || open > 100) return 'chartData[$i].open 超出范围';
-    if (close < 0 || close > 100) return 'chartData[$i].close 超出范围';
+    if (open < 0 || open > 10) return 'chartData[$i].open 超出范围 (0-10)';
+    if (close < 0 || close > 10) return 'chartData[$i].close 超出范围 (0-10)';
 
     // Validate K-line logic
     final maxOC = open > close ? open : close;

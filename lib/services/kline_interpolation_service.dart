@@ -30,8 +30,12 @@ class KLineInterpolationService {
     final spline = _NaturalCubicSpline(xs, ys);
 
     // First/last anchor year boundaries for extrapolation detection
-    final firstAnchorDate = _dateToDouble(DateTime(anchorPoints.first.year, 1, 1));
-    final lastAnchorDate = _dateToDouble(DateTime(anchorPoints.last.year, 12, 31));
+    final firstAnchorDate = _dateToDouble(
+      DateTime(anchorPoints.first.year, 1, 1),
+    );
+    final lastAnchorDate = _dateToDouble(
+      DateTime(anchorPoints.last.year, 12, 31),
+    );
 
     // Build year-keyed lookup for fast anchor access
     final anchorByYear = {for (final a in anchorPoints) a.year: a};
@@ -52,7 +56,9 @@ class KLineInterpolationService {
       } else if (t > xs.last) {
         // Linear extrapolation after last anchor
         final n = xs.length;
-        final slope = n > 1 ? (ys[n - 1] - ys[n - 2]) / (xs[n - 1] - xs[n - 2]) : 0.0;
+        final slope = n > 1
+            ? (ys[n - 1] - ys[n - 2]) / (xs[n - 1] - xs[n - 2])
+            : 0.0;
         baseScore = ys.last + slope * (t - xs.last);
       } else {
         baseScore = spline.evaluate(t);
@@ -81,27 +87,32 @@ class KLineInterpolationService {
       final isExtrapolated = t < firstAnchorDate || t > lastAnchorDate;
 
       // Inherit metadata from the nearest annual anchor
-      final anchor = anchorByYear[current.year] ??
-          anchorPoints.reduce((a, b) =>
-              (current.year - a.year).abs() <= (current.year - b.year).abs()
-                  ? a
-                  : b);
+      final anchor =
+          anchorByYear[current.year] ??
+          anchorPoints.reduce(
+            (a, b) =>
+                (current.year - a.year).abs() <= (current.year - b.year).abs()
+                ? a
+                : b,
+          );
 
-      results.add(KLinePoint(
-        age: anchorAge,
-        year: current.year,
-        ganZhi: dateLabel,
-        daYun: anchor.daYun,
-        open: double.parse(open.toStringAsFixed(2)),
-        close: double.parse(close.toStringAsFixed(2)),
-        high: double.parse(high.toStringAsFixed(2)),
-        low: double.parse(low.toStringAsFixed(2)),
-        score: double.parse(baseScore.toStringAsFixed(2)),
-        reason: isExtrapolated ? '线性外推插值' : anchor.reason,
-        tenGod: anchor.tenGod,
-        energyScore: null,
-        actionAdvice: anchor.actionAdvice,
-      ));
+      results.add(
+        KLinePoint(
+          age: anchorAge,
+          year: current.year,
+          ganZhi: dateLabel,
+          daYun: anchor.daYun,
+          open: double.parse(open.toStringAsFixed(2)),
+          close: double.parse(close.toStringAsFixed(2)),
+          high: double.parse(high.toStringAsFixed(2)),
+          low: double.parse(low.toStringAsFixed(2)),
+          score: double.parse(baseScore.toStringAsFixed(2)),
+          reason: isExtrapolated ? '线性外推插值' : anchor.reason,
+          tenGod: anchor.tenGod,
+          energyScore: null,
+          actionAdvice: anchor.actionAdvice,
+        ),
+      );
 
       current = current.add(const Duration(days: 1));
     }
@@ -166,7 +177,8 @@ class _NaturalCubicSpline {
     // Solve for c using tridiagonal system (natural boundary: c[0]=c[n-1]=0)
     final alpha = List<double>.filled(n, 0.0);
     for (var i = 1; i < n - 1; i++) {
-      alpha[i] = 3.0 / h[i] * (_a[i + 1] - _a[i]) -
+      alpha[i] =
+          3.0 / h[i] * (_a[i + 1] - _a[i]) -
           3.0 / h[i - 1] * (_a[i] - _a[i - 1]);
     }
 
@@ -186,7 +198,8 @@ class _NaturalCubicSpline {
 
     for (var j = n - 2; j >= 0; j--) {
       _c[j] = z[j] - mu[j] * _c[j + 1];
-      _b[j] = (_a[j + 1] - _a[j]) / h[j] - h[j] * (_c[j + 1] + 2.0 * _c[j]) / 3.0;
+      _b[j] =
+          (_a[j + 1] - _a[j]) / h[j] - h[j] * (_c[j + 1] + 2.0 * _c[j]) / 3.0;
       _d[j] = (_c[j + 1] - _c[j]) / (3.0 * h[j]);
     }
   }

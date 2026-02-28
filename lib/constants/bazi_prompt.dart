@@ -150,11 +150,13 @@ String buildDailyAdviceUserMessage(UserInput input, List<KLinePoint> points) {
   final genderText = input.gender == Gender.male ? '乾造（男）' : '坤造（女）';
   final daYun = points.isNotEmpty ? (points.first.daYun ?? '未知') : '未知';
 
-  final rows = points.map((p) {
-    final parts = p.ganZhi.split('/');
-    final date = '${p.year}-${parts[0]}-${parts[1]}';
-    return '$date | ${p.score.toStringAsFixed(2)}';
-  }).join('\n');
+  final rows = points
+      .map((p) {
+        final parts = p.ganZhi.split('/');
+        final date = '${p.year}-${parts[0]}-${parts[1]}';
+        return '$date | ${p.score.toStringAsFixed(2)}';
+      })
+      .join('\n');
 
   return '''输入参数：
 四柱干支: ${input.yearPillar}年 ${input.monthPillar}月 ${input.dayPillar}日 ${input.hourPillar}时

@@ -4,18 +4,16 @@ import '../../services/storage_service.dart';
 import 'destiny_result_event.dart';
 import 'destiny_result_state.dart';
 
-class DestinyResultBloc
-    extends Bloc<DestinyResultEvent, DestinyResultState> {
+class DestinyResultBloc extends Bloc<DestinyResultEvent, DestinyResultState> {
   final DestinyApiService _apiService;
   final StorageService _storageService;
 
-  DestinyApiService get apiService => _apiService;
   DestinyResultBloc({
     required DestinyApiService apiService,
     required StorageService storageService,
-  })  : _apiService = apiService,
-        _storageService = storageService,
-        super(const DestinyResultInitial()) {
+  }) : _apiService = apiService,
+       _storageService = storageService,
+       super(const DestinyResultInitial()) {
     on<DestinyResultGenerate>(_onGenerate);
     on<DestinyResultLoaded>(_onLoaded);
     on<DestinyResultCleared>(_onCleared);
@@ -35,10 +33,9 @@ class DestinyResultBloc
 
       emit(DestinyResultSuccess(result: result, userName: userName));
     } catch (e) {
-      emit(DestinyResultFailure(
-        error: e.toString(),
-        suggestion: '请检查网络连接，或稍后重试',
-      ));
+      emit(
+        DestinyResultFailure(error: e.toString(), suggestion: '请检查网络连接，或稍后重试'),
+      );
     }
   }
 

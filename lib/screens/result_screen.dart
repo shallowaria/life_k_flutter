@@ -8,6 +8,7 @@ import '../blocs/user_input/user_input_state.dart';
 import '../models/life_destiny_result.dart';
 import '../models/k_line_point.dart';
 import '../models/analysis_data.dart';
+import '../services/destiny_api_service.dart';
 import '../widgets/k_line_chart/k_line_chart.dart';
 import '../widgets/k_line_chart/chart_view_mode.dart';
 
@@ -55,7 +56,7 @@ class _ResultScreenState extends State<ResultScreen> {
     if (userInputState is! UserInputReady) return;
     final userInput = userInputState.input;
 
-    final service = context.read<DestinyResultBloc>().apiService;
+    final service = context.read<DestinyApiService>();
 
     setState(() {
       if (mode == ChartViewMode.month) {

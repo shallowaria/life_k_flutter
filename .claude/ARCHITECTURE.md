@@ -107,37 +107,38 @@ ResultScreen
 
 ### UserInputBloc
 
-| 事件 | 触发时机 | 处理逻辑 |
-|------|---------|---------|
-| `UserInputLoaded` | App 启动 | 从 SharedPreferences 读取已保存信息 |
-| `UserInputUpdated(UserInput)` | 用户提交表单 | 保存到 SharedPreferences |
-| `UserInputCleared` | 用户清除数据 | 删除本地数据 |
+| 事件                          | 触发时机     | 处理逻辑                            |
+| ----------------------------- | ------------ | ----------------------------------- |
+| `UserInputLoaded`             | App 启动     | 从 SharedPreferences 读取已保存信息 |
+| `UserInputUpdated(UserInput)` | 用户提交表单 | 保存到 SharedPreferences            |
+| `UserInputCleared`            | 用户清除数据 | 删除本地数据                        |
 
-| 状态 | 含义 |
-|------|------|
-| `UserInputInitial` | 未加载 |
+| 状态                        | 含义     |
+| --------------------------- | -------- |
+| `UserInputInitial`          | 未加载   |
 | `UserInputReady(UserInput)` | 数据就绪 |
 
 ### DestinyResultBloc
 
-| 事件 | 触发时机 | 处理逻辑 |
-|------|---------|---------|
-| `DestinyResultLoaded` | App 启动 | 从缓存恢复上次结果 |
-| `DestinyResultGenerate(UserInput)` | 用户提交表单 | 调用 API，重试3次 |
-| `DestinyResultCleared` | 用户清除 | 删除缓存 |
+| 事件                               | 触发时机     | 处理逻辑           |
+| ---------------------------------- | ------------ | ------------------ |
+| `DestinyResultLoaded`              | App 启动     | 从缓存恢复上次结果 |
+| `DestinyResultGenerate(UserInput)` | 用户提交表单 | 调用 API，重试3次  |
+| `DestinyResultCleared`             | 用户清除     | 删除缓存           |
 
-| 状态 | 含义 |
-|------|------|
-| `DestinyResultInitial` | 初始 |
-| `DestinyResultLoading` | API 请求中 |
-| `DestinyResultSuccess(result, userName)` | 分析完成 |
-| `DestinyResultFailure(error, suggestion)` | 失败（含用户友好提示）|
+| 状态                                      | 含义                   |
+| ----------------------------------------- | ---------------------- |
+| `DestinyResultInitial`                    | 初始                   |
+| `DestinyResultLoading`                    | API 请求中             |
+| `DestinyResultSuccess(result, userName)`  | 分析完成               |
+| `DestinyResultFailure(error, suggestion)` | 失败（含用户友好提示） |
 
 ---
 
 ## 数据模型
 
 ### UserInput
+
 ```dart
 class UserInput {
   String? name;
@@ -153,6 +154,7 @@ class UserInput {
 ```
 
 ### KLinePoint（30年蜡烛数据）
+
 ```dart
 class KLinePoint {
   int age;                  // 虚岁 (1-30)
@@ -170,6 +172,7 @@ class KLinePoint {
 ```
 
 ### AnalysisData（九维分析）
+
 ```dart
 class AnalysisData {
   List<String> bazi;         // 四柱数组
@@ -187,6 +190,7 @@ class AnalysisData {
 ```
 
 ### LifeDestinyResult（顶层包装）
+
 ```dart
 class LifeDestinyResult {
   List<KLinePoint> chartData;   // 30个年度K线点
@@ -195,6 +199,7 @@ class LifeDestinyResult {
 ```
 
 ### LifeEvent（人生事件，用于 AI 校准）
+
 ```dart
 class LifeEvent {
   int age;         // 发生时虚岁
@@ -207,12 +212,14 @@ class LifeEvent {
 ## 服务层
 
 ### BaziCalculator（静态方法）
+
 - 依赖 `lunar` 包：公历 → 农历 → 八字
 - 入参：`birthDate`（DateTime）、`shiChenName`（时辰名）、`gender`
 - 出参：四柱干支 + 大运起步年龄（虚岁，钳制 0-10）
 - 校验：出生年份 1900-2100，时辰名有效
 
 ### DestinyApiService
+
 - 调用 Anthropic Messages API（`/v1/messages`）
 - **`_retryPost()`**：私有统一重试方法，两个公开方法均委托于此
   - 最多 5 次重试
@@ -229,11 +236,13 @@ class LifeEvent {
 - System prompt 将任务框架定义为"JSON 数据生成引擎"以规避 AI 安全拒绝
 
 ### StorageService
+
 - SharedPreferences 封装
 - 存储键：用户信息 / 运势结果 / 用户姓名
 - 方法：save / load / clearAll（各实体独立）
 
 ### KLineInterpolationService
+
 - 算法：自然三次样条 + 确定性伪随机 OHLC
 - 确定性：Knuth hash 保证相同日期始终产生相同蜡烛
 - 元数据继承：daYun / tenGod / reason 来自最近年锚点
@@ -254,18 +263,21 @@ GoRouter
 ## 图表渲染
 
 ### KLineChart（Widget 层）
+
 - 管理视图模式：年 / 月 / 日
 - 维护插值缓存：`_cachedMonthData` / `_cachedDayData`
 - 管理 OverlayEntry tooltip 生命周期
 - 切换视图时触发 `onViewModeChanged` 回调，传递插值后的数据
 
 ### KLinePainter（CustomPainter）
+
 绘制顺序：
+
 1. 网格线 + Y轴标签
 2. 支撑/压力水平线（强/中/弱）
 3. 大运分隔竖线（仅年视图）
 4. 当前年份标记竖线
-5. MK10 移动均线（10周期，绿色）
+5. MA10 移动均线（10周期，绿色）
 6. 蜡烛主体（菱形）+ 影线
 7. 最高点封印印章
 8. 关键年行动印章（启/变，仅年视图）
@@ -277,12 +289,14 @@ GoRouter
 | 吉/阳线 | 朱砂红 | `#B22D1B` |
 | 凶/阴线 | 藏青 | `#2F4F4F` |
 | 金色装饰 | 金 | `#C5A367` |
-| MK10均线 | 翠绿 | `#479977` |
+| MA10均线 | 翠绿 | `#479977` |
 
 ### ChartViewMode（Enum）
+
 ```dart
 enum ChartViewMode { year, month, day }
 ```
+
 - `label`：年视图 / 月视图 / 日视图
 - `dateRange(today)`：
   - year：全部30年数据
@@ -290,6 +304,7 @@ enum ChartViewMode { year, month, day }
   - day：today ± 7天
 
 ### KLineTooltip（弹层）
+
 - 触发：点击蜡烛
 - 内容：日期+干支+年龄 / 大运 / 十神 / 吉凶徽章 / OHLC / 能量分 / 行动建议
 
@@ -298,11 +313,13 @@ enum ChartViewMode { year, month, day }
 ## 常量
 
 ### shi_chen.dart（十二时辰）
+
 - 12个时辰（子丑寅卯…）及对应2小时区间
 - `getHourFromShiChen(name)` → 代表小时
 - `getShiChenFromHour(hour)` → 时辰名称
 
 ### bazi_prompt.dart（AI 提示词）
+
 - `baziSystemInstruction`：30年运势生成规则 + JSON Schema（chartPoints + analysis + 支撑压力位）
 - `dailyAdviceSystemInstruction`：每日行动建议规则 + JSON Schema
 
@@ -311,6 +328,7 @@ enum ChartViewMode { year, month, day }
 ## 工具函数
 
 ### score_normalizer.dart
+
 ```dart
 double normalizeScore(double score) {
   // 若分数 > 10，视为0-100制，除以10取整
@@ -320,6 +338,7 @@ double normalizeScore(double score) {
 ```
 
 ### validators.dart
+
 - `validateChartData(List<KLinePoint>)`：验证30个点、OHLC约束（high ≥ max(O,C)，low ≤ min(O,C)）、分值0-10
 - `validateBaziInput(UserInput)`：四柱汉字校验、起运年龄0-10
 
@@ -345,20 +364,20 @@ class Env {
 
 ## 依赖一览
 
-| 包 | 版本 | 用途 |
-|----|------|------|
-| `flutter_bloc` | ^9.1.0 | BLoC 状态管理 |
-| `bloc` | ^9.0.0 | BLoC 核心 |
-| `dio` | ^5.8.0 | HTTP 客户端 |
-| `go_router` | ^15.1.2 | 声明式路由 |
-| `lunar` | ^1.3.20 | 农历/八字计算 |
-| `shared_preferences` | ^2.5.3 | 本地 KV 存储 |
-| `equatable` | ^2.0.7 | BLoC 值相等 |
-| `intl` | ^0.20.2 | 国际化 |
-| `flutter_dotenv` | ^6.0.0 | .env 环境变量加载 |
-| `url_launcher` | ^6.3.1 | 外部链接跳转 |
-| `flutter_launcher_icons` | ^0.14.4 | 图标生成（dev） |
-| `flutter_lints` | ^6.0.0 | 代码规范（dev） |
+| 包                       | 版本    | 用途              |
+| ------------------------ | ------- | ----------------- |
+| `flutter_bloc`           | ^9.1.0  | BLoC 状态管理     |
+| `bloc`                   | ^9.0.0  | BLoC 核心         |
+| `dio`                    | ^5.8.0  | HTTP 客户端       |
+| `go_router`              | ^15.1.2 | 声明式路由        |
+| `lunar`                  | ^1.3.20 | 农历/八字计算     |
+| `shared_preferences`     | ^2.5.3  | 本地 KV 存储      |
+| `equatable`              | ^2.0.7  | BLoC 值相等       |
+| `intl`                   | ^0.20.2 | 国际化            |
+| `flutter_dotenv`         | ^6.0.0  | .env 环境变量加载 |
+| `url_launcher`           | ^6.3.1  | 外部链接跳转      |
+| `flutter_launcher_icons` | ^0.14.4 | 图标生成（dev）   |
+| `flutter_lints`          | ^6.0.0  | 代码规范（dev）   |
 
 ---
 

@@ -7,8 +7,8 @@ class UserInputBloc extends Bloc<UserInputEvent, UserInputState> {
   final StorageService _storageService;
 
   UserInputBloc({required StorageService storageService})
-      : _storageService = storageService,
-        super(const UserInputInitial()) {
+    : _storageService = storageService,
+      super(const UserInputInitial()) {
     on<UserInputLoaded>(_onLoaded);
     on<UserInputUpdated>(_onUpdated);
     on<UserInputCleared>(_onCleared);

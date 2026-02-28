@@ -50,12 +50,12 @@ class EnergyScore {
   }
 
   Map<String, dynamic> toJson() => {
-        'total': total,
-        'monthCoefficient': monthCoefficient,
-        'dayRelation': dayRelation,
-        'hourFluctuation': hourFluctuation,
-        'isBelowSupport': isBelowSupport,
-      };
+    'total': total,
+    'monthCoefficient': monthCoefficient,
+    'dayRelation': dayRelation,
+    'hourFluctuation': hourFluctuation,
+    'isBelowSupport': isBelowSupport,
+  };
 }
 
 /// Action advice for key years
@@ -82,11 +82,11 @@ class ActionAdvice {
   }
 
   Map<String, dynamic> toJson() => {
-        'suggestions': suggestions,
-        'warnings': warnings,
-        if (basis != null) 'basis': basis,
-        if (scenario != null) 'scenario': scenario,
-      };
+    'suggestions': suggestions,
+    'warnings': warnings,
+    if (basis != null) 'basis': basis,
+    if (scenario != null) 'scenario': scenario,
+  };
 }
 
 /// Single K-line data point representing one year of life fortune
@@ -140,25 +140,24 @@ class KLinePoint {
           ? EnergyScore.fromJson(json['energyScore'] as Map<String, dynamic>)
           : null,
       actionAdvice: json['actionAdvice'] != null
-          ? ActionAdvice.fromJson(
-              json['actionAdvice'] as Map<String, dynamic>)
+          ? ActionAdvice.fromJson(json['actionAdvice'] as Map<String, dynamic>)
           : null,
     );
   }
 
   Map<String, dynamic> toJson() => {
-        'age': age,
-        'year': year,
-        'ganZhi': ganZhi,
-        if (daYun != null) 'daYun': daYun,
-        'open': open,
-        'close': close,
-        'high': high,
-        'low': low,
-        'score': score,
-        'reason': reason,
-        if (tenGod != null) 'tenGod': tenGod!.label,
-        if (energyScore != null) 'energyScore': energyScore!.toJson(),
-        if (actionAdvice != null) 'actionAdvice': actionAdvice!.toJson(),
-      };
+    'age': age,
+    'year': year,
+    'ganZhi': ganZhi,
+    if (daYun != null) 'daYun': daYun,
+    'open': open,
+    'close': close,
+    'high': high,
+    'low': low,
+    'score': score,
+    'reason': reason,
+    if (tenGod != null) 'tenGod': tenGod!.label,
+    if (energyScore != null) 'energyScore': energyScore!.toJson(),
+    if (actionAdvice != null) 'actionAdvice': actionAdvice!.toJson(),
+  };
 }

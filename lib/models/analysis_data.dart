@@ -36,14 +36,14 @@ class SupportPressureLevel {
   }
 
   Map<String, dynamic> toJson() => {
-        'age': age,
-        if (date != null) 'date': date,
-        'type': type,
-        'value': value,
-        'strength': strength,
-        'reason': reason,
-        if (tenGod != null) 'tenGod': tenGod!.label,
-      };
+    'age': age,
+    if (date != null) 'date': date,
+    'type': type,
+    'value': value,
+    'strength': strength,
+    'reason': reason,
+    if (tenGod != null) 'tenGod': tenGod!.label,
+  };
 }
 
 /// Nine-dimensional analysis data from AI
@@ -121,37 +121,40 @@ class AnalysisData {
       cryptoStyle: json['cryptoStyle'] as String? ?? '',
       supportPressureLevels: json['supportPressureLevels'] != null
           ? (json['supportPressureLevels'] as List)
-              .map((e) =>
-                  SupportPressureLevel.fromJson(e as Map<String, dynamic>))
-              .toList()
+                .map(
+                  (e) =>
+                      SupportPressureLevel.fromJson(e as Map<String, dynamic>),
+                )
+                .toList()
           : null,
     );
   }
 
   Map<String, dynamic> toJson() => {
-        'bazi': bazi,
-        'summary': summary,
-        'summaryScore': summaryScore,
-        'personality': personality,
-        'personalityScore': personalityScore,
-        'industry': industry,
-        'industryScore': industryScore,
-        'fengShui': fengShui,
-        'fengShuiScore': fengShuiScore,
-        'wealth': wealth,
-        'wealthScore': wealthScore,
-        'marriage': marriage,
-        'marriageScore': marriageScore,
-        'health': health,
-        'healthScore': healthScore,
-        'family': family,
-        'familyScore': familyScore,
-        'crypto': crypto,
-        'cryptoScore': cryptoScore,
-        'cryptoYear': cryptoYear,
-        'cryptoStyle': cryptoStyle,
-        if (supportPressureLevels != null)
-          'supportPressureLevels':
-              supportPressureLevels!.map((e) => e.toJson()).toList(),
-      };
+    'bazi': bazi,
+    'summary': summary,
+    'summaryScore': summaryScore,
+    'personality': personality,
+    'personalityScore': personalityScore,
+    'industry': industry,
+    'industryScore': industryScore,
+    'fengShui': fengShui,
+    'fengShuiScore': fengShuiScore,
+    'wealth': wealth,
+    'wealthScore': wealthScore,
+    'marriage': marriage,
+    'marriageScore': marriageScore,
+    'health': health,
+    'healthScore': healthScore,
+    'family': family,
+    'familyScore': familyScore,
+    'crypto': crypto,
+    'cryptoScore': cryptoScore,
+    'cryptoYear': cryptoYear,
+    'cryptoStyle': cryptoStyle,
+    if (supportPressureLevels != null)
+      'supportPressureLevels': supportPressureLevels!
+          .map((e) => e.toJson())
+          .toList(),
+  };
 }

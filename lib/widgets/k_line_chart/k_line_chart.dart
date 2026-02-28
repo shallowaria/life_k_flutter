@@ -216,7 +216,8 @@ class _KLineChartState extends State<KLineChart> {
                 point: point,
                 viewMode: _viewMode,
                 isLoadingAdvice: widget.isLoadingDailyAdvice,
-                onReminderTap: (_viewMode == ChartViewMode.day &&
+                onReminderTap:
+                    (_viewMode == ChartViewMode.day &&
                         point.actionAdvice != null)
                     ? () => _handleReminderTap(point)
                     : null,

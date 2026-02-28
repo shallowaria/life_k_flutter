@@ -103,7 +103,9 @@ class BaziCalculator {
 /// Get Da Yun direction (顺行/逆行)
 /// 阳男/阴女顺行, 阴男/阳女逆行
 ({bool isForward, String text}) getDaYunDirection(
-    String yearPillar, Gender gender) {
+  String yearPillar,
+  Gender gender,
+) {
   final firstChar = yearPillar.trim().isNotEmpty ? yearPillar.trim()[0] : '';
   const yangStems = ['甲', '丙', '戊', '庚', '壬'];
   final isYangYear = yangStems.contains(firstChar);

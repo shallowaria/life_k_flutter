@@ -18,7 +18,7 @@ class KLinePainter extends CustomPainter {
   static const Color cinnabarStroke = Color(0xFF8B1810);
   static const Color indigo = Color(0xFF2F4F4F); // 靛青 - down/凶
   static const Color indigoStroke = Color(0xFF1F3A3A);
-  static const Color mk10Color = Color(0xFF479977);
+  static const Color ma10Color = Color(0xFF479977);
   static const Color supportLineColor = Color(0xFF2F4F4F);
   static const Color pressureLineColor = Color(0xFFB22D1B);
   static const Color goldColor = Color(0xFFC5A367);
@@ -472,25 +472,25 @@ class KLinePainter extends CustomPainter {
   ) {
     if (data.length < 2) return;
 
-    // Use MK5 for day view (fewer data points), MK10 for others
+    // Use MA5 for day view (fewer data points), MA10 for others
     final window = viewMode == ChartViewMode.day ? 5 : 10;
 
-    final mkValues = List<double>.generate(data.length, (i) {
+    final maValues = List<double>.generate(data.length, (i) {
       final start = max(0, i - (window - 1));
       final slice = data.sublist(start, i + 1);
       return slice.map((d) => d.close).reduce((a, b) => a + b) / slice.length;
     });
 
     final path = Path();
-    for (var i = 0; i < mkValues.length; i++) {
+    for (var i = 0; i < maValues.length; i++) {
       final x = mapX(i);
-      final y = mapY(mkValues[i]);
+      final y = mapY(maValues[i]);
       if (i == 0) {
         path.moveTo(x, y);
       } else {
         // Smooth curve
         final prevX = mapX(i - 1);
-        final prevY = mapY(mkValues[i - 1]);
+        final prevY = mapY(maValues[i - 1]);
         final cpX = (prevX + x) / 2;
         path.cubicTo(cpX, prevY, cpX, y, x, y);
       }
@@ -499,7 +499,7 @@ class KLinePainter extends CustomPainter {
     canvas.drawPath(
       path,
       Paint()
-        ..color = mk10Color
+        ..color = ma10Color
         ..strokeWidth = 2
         ..style = PaintingStyle.stroke
         ..strokeCap = StrokeCap.round,
@@ -761,23 +761,23 @@ class KLinePainter extends CustomPainter {
     x += srLabel.width + 16;
 
     // Moving average legend
-    final mkLabelText = viewMode == ChartViewMode.day ? 'MK5' : 'MK10';
+    final maLabelText = viewMode == ChartViewMode.day ? 'MA5' : 'MA10';
     canvas.drawLine(
       Offset(x, y),
       Offset(x + 20, y),
       Paint()
-        ..color = mk10Color
+        ..color = ma10Color
         ..strokeWidth = 2,
     );
     x += 24;
-    final mkLabel = TextPainter(
+    final maLabel = TextPainter(
       text: TextSpan(
-        text: mkLabelText,
+        text: maLabelText,
         style: const TextStyle(fontSize: 10, color: Color(0xFF4338CA)),
       ),
       textDirection: TextDirection.ltr,
     )..layout();
-    mkLabel.paint(canvas, Offset(x, y - mkLabel.height / 2));
+    maLabel.paint(canvas, Offset(x, y - maLabel.height / 2));
   }
 
   void _drawDashedLine(

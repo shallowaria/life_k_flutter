@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import '../models/user_input.dart';
@@ -772,6 +773,7 @@ class _AddEventSheetState extends State<_AddEventSheet> {
   int _selectedDay = 1;
   EventType _selectedType = EventType.career;
   EventOutcome _selectedOutcome = EventOutcome.smooth;
+  String? _yearError;
 
   @override
   void dispose() {
@@ -784,6 +786,13 @@ class _AddEventSheetState extends State<_AddEventSheet> {
     final year = _yearCtrl.text.trim();
     final desc = _descCtrl.text.trim();
     if (year.isEmpty || desc.isEmpty) return;
+
+    final yearInt = int.tryParse(year);
+    if (yearInt == null || yearInt < 1900 || yearInt > 2100) {
+      setState(() => _yearError = '请输入 1900–2100 之间的有效年份');
+      return;
+    }
+
     widget.onConfirm(
       LifeEvent(
         year: year,
@@ -865,8 +874,15 @@ class _AddEventSheetState extends State<_AddEventSheet> {
             TextField(
               controller: _yearCtrl,
               keyboardType: TextInputType.number,
+              maxLength: 4,
+              inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+              onChanged: (_) {
+                if (_yearError != null) setState(() => _yearError = null);
+              },
               decoration: InputDecoration(
                 hintText: '如 2026',
+                counterText: '',
+                errorText: _yearError,
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(8),
                 ),

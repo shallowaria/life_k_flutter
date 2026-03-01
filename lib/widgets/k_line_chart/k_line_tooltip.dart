@@ -209,7 +209,7 @@ class KLineTooltip extends StatelessWidget {
             ],
 
             // Action advice (when available, or loading)
-            if (isLoadingAdvice) ...[
+            if (isLoadingAdvice && point.actionAdvice == null) ...[
               const Divider(height: 20),
               const Row(
                 children: [

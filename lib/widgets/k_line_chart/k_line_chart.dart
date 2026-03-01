@@ -327,7 +327,7 @@ class _KLineChartState extends State<KLineChart> {
           ),
           // Chart
           SizedBox(
-            height: 300,
+            height: 370,
             child: GestureDetector(
               onTapUp: (details) {
                 final box = context.findRenderObject() as RenderBox;

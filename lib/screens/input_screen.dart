@@ -134,25 +134,35 @@ class _InputScreenState extends State<InputScreen> {
         if (state is DestinyResultSuccess) context.push('/result');
       },
       child: Scaffold(
-        body: Container(
-          decoration: const BoxDecoration(
-            gradient: LinearGradient(
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-              colors: [Color(0xFFFEF2F2), Color(0xFFFED7AA), Color(0xFFFEF9C3)],
+        body: GestureDetector(
+          behavior: HitTestBehavior.translucent,
+          onTap: () {
+            FocusManager.instance.primaryFocus?.unfocus();
+          },
+          child: Container(
+            decoration: const BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [
+                  Color(0xFFFEF2F2),
+                  Color(0xFFFED7AA),
+                  Color(0xFFFEF9C3),
+                ],
+              ),
             ),
-          ),
-          child: SafeArea(
-            child: BlocBuilder<DestinyResultBloc, DestinyResultState>(
-              builder: (context, destinyState) {
-                if (destinyState is DestinyResultLoading) {
-                  return _buildLoadingView();
-                }
-                if (destinyState is DestinyResultFailure) {
-                  return _buildErrorView(destinyState);
-                }
-                return _buildFormView();
-              },
+            child: SafeArea(
+              child: BlocBuilder<DestinyResultBloc, DestinyResultState>(
+                builder: (context, destinyState) {
+                  if (destinyState is DestinyResultLoading) {
+                    return _buildLoadingView();
+                  }
+                  if (destinyState is DestinyResultFailure) {
+                    return _buildErrorView(destinyState);
+                  }
+                  return _buildFormView();
+                },
+              ),
             ),
           ),
         ),
@@ -333,7 +343,10 @@ class _InputScreenState extends State<InputScreen> {
                 _sectionLabel('出生日期 (公历) *'),
                 const SizedBox(height: 8),
                 InkWell(
-                  onTap: _onDatePicked,
+                  onTap: () {
+                    FocusManager.instance.primaryFocus?.unfocus();
+                    _onDatePicked();
+                  },
                   child: Container(
                     padding: const EdgeInsets.symmetric(
                       horizontal: 16,
@@ -672,7 +685,10 @@ class _LifeEventsSection extends StatelessWidget {
               ),
             ),
             TextButton.icon(
-              onPressed: onAddTap,
+              onPressed: () {
+                FocusManager.instance.primaryFocus?.unfocus();
+                onAddTap();
+              },
               icon: const Icon(Icons.add, size: 18, color: Color(0xFF8B3A3A)),
               label: const Text(
                 '添加事件',

@@ -39,7 +39,7 @@ class KLinePainter extends CustomPainter {
 
   // Chart layout constants
   static const double paddingTop = 40;
-  static const double paddingBottom = 40;
+  static const double paddingBottom = 30;
   static const double paddingLeft = 40;
   static const double paddingRight = 16;
 
@@ -111,7 +111,7 @@ class KLinePainter extends CustomPainter {
     _drawCandles(canvas, chartRect, mapX, mapY, cWidth);
 
     // Draw peak seal stamp
-    _drawPeakSeal(canvas, mapX, mapY, cWidth);
+    _drawPeakSeal(canvas, chartRect, mapX, mapY, cWidth);
 
     // Draw action advice stamps (year view only)
     if (viewMode == ChartViewMode.year) {
@@ -610,6 +610,7 @@ class KLinePainter extends CustomPainter {
 
   void _drawPeakSeal(
     Canvas canvas,
+    Rect chartRect,
     double Function(int) mapX,
     double Function(double) mapY,
     double cWidth,
@@ -625,10 +626,13 @@ class KLinePainter extends CustomPainter {
     const size = 22.0;
     const fontSize = 10.0;
 
+    // 印章中心 Y：优先放在影线上方，但不能超出图表顶部（与大运标签重合）
+    final sealCenterY = max(y - size - 4, chartRect.top + size / 2 + 2);
+
     // Seal background
     final sealRect = RRect.fromRectAndRadius(
       Rect.fromCenter(
-        center: Offset(x, y - size - 4),
+        center: Offset(x, sealCenterY),
         width: size,
         height: size,
       ),
@@ -642,7 +646,7 @@ class KLinePainter extends CustomPainter {
     canvas.drawRRect(
       RRect.fromRectAndRadius(
         Rect.fromCenter(
-          center: Offset(x, y - size - 4),
+          center: Offset(x, sealCenterY),
           width: size - 4,
           height: size - 4,
         ),
@@ -668,7 +672,7 @@ class KLinePainter extends CustomPainter {
       ),
       textDirection: TextDirection.ltr,
     )..layout();
-    tp.paint(canvas, Offset(x - tp.width / 2, y - size - 4 - tp.height / 2));
+    tp.paint(canvas, Offset(x - tp.width / 2, sealCenterY - tp.height / 2));
   }
 
   void _drawActionAdviceStamps(

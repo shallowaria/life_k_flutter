@@ -33,9 +33,20 @@ class DestinyResultBloc extends Bloc<DestinyResultEvent, DestinyResultState> {
 
       emit(DestinyResultSuccess(result: result, userName: userName));
     } catch (e) {
-      emit(
-        DestinyResultFailure(error: e.toString(), suggestion: '请检查网络连接，或稍后重试'),
-      );
+      final msg = e.toString();
+      final String suggestion;
+      if (msg.contains('网络超时') || msg.contains('超时')) {
+        suggestion = '网络请求超时，请检查网络连接后重试';
+      } else if (msg.contains('API 错误 (4')) {
+        suggestion = '请求参数有误，请检查出生信息后重试';
+      } else if (msg.contains('解析')) {
+        suggestion = '数据解析失败，请重新生成';
+      } else if (msg.contains('网络错误') || msg.contains('网络连接')) {
+        suggestion = '网络连接失败，请检查网络设置后重试';
+      } else {
+        suggestion = 'API 服务暂时不可用，请稍后重试';
+      }
+      emit(DestinyResultFailure(error: msg, suggestion: suggestion));
     }
   }
 

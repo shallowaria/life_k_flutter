@@ -47,7 +47,7 @@ class DestinyApiService {
   ///   - AI refusal text  → detected via [_isAiRefusal], retry with short delay
   ///
   /// Returns the raw response `data` on success.
-  Future<dynamic> _retryPost({
+  Future<Map<String, dynamic>> _retryPost({
     required Map<String, dynamic> body,
     int maxRetries = 5,
   }) async {
@@ -84,17 +84,26 @@ class DestinyApiService {
           continue;
         }
 
-        // 200: check for AI refusal before returning
-        final content = response.data['content'] as List?;
-        if (content == null || content.isEmpty) {
-          lastError = Exception('AI 返回格式错误：content 为空');
+        // 200: validate response structure and check for AI refusal
+        final rawData = response.data;
+        if (rawData is! Map<String, dynamic>) {
+          lastError = Exception('API 响应格式异常：期望 Map，实际为 ${rawData.runtimeType}');
           if (attempt < maxRetries) {
             await Future.delayed(const Duration(seconds: 2));
           }
           continue;
         }
 
-        final textBlock = content.firstWhere(
+        final rawContent = rawData['content'];
+        if (rawContent is! List || rawContent.isEmpty) {
+          lastError = Exception('AI 返回格式错误：content 为空或格式异常');
+          if (attempt < maxRetries) {
+            await Future.delayed(const Duration(seconds: 2));
+          }
+          continue;
+        }
+
+        final textBlock = rawContent.firstWhere(
           (b) => b['type'] == 'text',
           orElse: () => null,
         );
@@ -106,7 +115,16 @@ class DestinyApiService {
           continue;
         }
 
-        final text = (textBlock['text'] as String).trim();
+        final rawText = textBlock['text'];
+        if (rawText is! String) {
+          lastError = Exception('AI 返回格式错误：text 字段非字符串');
+          if (attempt < maxRetries) {
+            await Future.delayed(const Duration(seconds: 2));
+          }
+          continue;
+        }
+
+        final text = rawText.trim();
         if (_isAiRefusal(text)) {
           lastError = _AiRefusalException('AI 拒绝生成（第 $attempt 次），正在重试...');
           if (attempt < maxRetries) {
@@ -115,19 +133,24 @@ class DestinyApiService {
           continue;
         }
 
-        return response.data;
+        return rawData;
       } on _AiRefusalException catch (e) {
         lastError = e;
         if (attempt < maxRetries) {
           await Future.delayed(const Duration(seconds: 3));
         }
       } on DioException catch (e) {
-        lastError = e;
+        if (e.type == DioExceptionType.connectionTimeout ||
+            e.type == DioExceptionType.receiveTimeout) {
+          lastError = Exception('网络超时：${e.message ?? e.type.name}');
+        } else {
+          lastError = Exception('网络错误：${e.message ?? e.type.name}');
+        }
         if (attempt < maxRetries) {
           await Future.delayed(Duration(seconds: 5 * attempt));
         }
       } catch (e, st) {
-        if (e is Exception) rethrow; // 4xx: bubble up immediately
+        if (e is Exception) rethrow; // Exception（含 4xx 客户端错误）立即重抛，不再重试
         Error.throwWithStackTrace(Exception(e.toString()), st);
       }
     }
@@ -224,11 +247,16 @@ ${_buildLifeEventsSection(input)}
     );
 
     try {
+      if (responseData['content'] is! List) {
+        throw Exception('AI 响应格式异常：content 字段非列表');
+      }
       final content = (responseData['content'] as List).firstWhere(
         (b) => b['type'] == 'text',
         orElse: () => throw Exception('AI 返回格式错误：未找到文本内容'),
       );
-      var aiText = (content['text'] as String).trim();
+      final rawText = content['text'];
+      if (rawText is! String) throw Exception('AI 返回格式错误：text 字段非字符串');
+      var aiText = rawText.trim();
       aiText = aiText
           .replaceAll(RegExp(r'```json\s*'), '')
           .replaceAll(RegExp(r'```\s*'), '')
@@ -269,11 +297,16 @@ ${_buildLifeEventsSection(input)}
     );
 
     try {
+      if (responseData['content'] is! List) {
+        throw Exception('AI 响应格式异常：content 字段非列表');
+      }
       final content = (responseData['content'] as List).firstWhere(
         (b) => b['type'] == 'text',
         orElse: () => throw Exception('AI 返回格式错误：未找到文本内容'),
       );
-      var aiText = (content['text'] as String).trim();
+      final rawText = content['text'];
+      if (rawText is! String) throw Exception('AI 返回格式错误：text 字段非字符串');
+      var aiText = rawText.trim();
       aiText = aiText
           .replaceAll(RegExp(r'```json\s*'), '')
           .replaceAll(RegExp(r'```\s*'), '')
@@ -296,14 +329,19 @@ ${_buildLifeEventsSection(input)}
   // Parsing helpers
   // ---------------------------------------------------------------------------
 
-  LifeDestinyResult _parseResponse(dynamic responseData) {
+  LifeDestinyResult _parseResponse(Map<String, dynamic> responseData) {
+    if (responseData['content'] is! List) {
+      throw Exception('AI 返回格式错误：content 字段非列表');
+    }
     final content = responseData['content'] as List;
     final textBlock = content.firstWhere(
       (block) => block['type'] == 'text',
       orElse: () => throw Exception('AI 返回格式错误：未找到文本内容'),
     );
 
-    var aiText = (textBlock['text'] as String).trim();
+    final rawText = textBlock['text'];
+    if (rawText is! String) throw Exception('AI 返回格式错误：text 字段非字符串');
+    var aiText = rawText.trim();
     aiText = aiText
         .replaceAll(RegExp(r'```json\s*'), '')
         .replaceAll(RegExp(r'```\s*'), '')

@@ -125,14 +125,21 @@ int getHourFromShiChen(String shiChenName) {
   return sc.midHour;
 }
 
-/// Get ShiChen name from hour
+/// Get ShiChen name from hour (0–23).
+///
+/// 子时跨越午夜（23:00–01:00）：hour 23 和 hour 0 归子时，hour 1（01:00）归丑时。
+/// 传入 0–23 范围外的值将抛出 [ArgumentError]。
 String getShiChenFromHour(int hour) {
+  if (hour < 0 || hour > 23) {
+    throw ArgumentError('无效时辰小时值：$hour，需在 0–23 范围内');
+  }
+  // 子时横跨午夜：23:00–00:59 → 子时；01:00 起归丑时
   if (hour == 23 || hour == 0) return '子时';
-  final sc = shiChenList
+  return shiChenList
       .where((s) => s.name != '子时')
       .firstWhere(
         (s) => hour >= s.startHour && hour < s.endHour,
-        orElse: () => shiChenList[0],
-      );
-  return sc.name;
+        orElse: () => throw ArgumentError('无法匹配时辰，hour=$hour'),
+      )
+      .name;
 }

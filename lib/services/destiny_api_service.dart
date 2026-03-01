@@ -103,10 +103,9 @@ class DestinyApiService {
           continue;
         }
 
-        final textBlock = rawContent.firstWhere(
-          (b) => b['type'] == 'text',
-          orElse: () => null,
-        );
+        final textBlock = rawContent
+            .where((b) => b is Map && b['type'] == 'text')
+            .firstOrNull;
         if (textBlock == null) {
           lastError = Exception('AI 返回格式错误：未找到文本内容');
           if (attempt < maxRetries) {

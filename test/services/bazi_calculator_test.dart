@@ -126,4 +126,93 @@ void main() {
       expect(() => getDaYunDirection('', Gender.male), returnsNormally);
     });
   });
+
+  group('BaziCalculator.calculate', () {
+    test('returns BaziCalculationResult with non-empty pillar strings', () {
+      final result = BaziCalculator.calculate(
+        birthDate: DateTime(1990, 6, 15),
+        shiChenName: '午时',
+        gender: Gender.male,
+      );
+
+      expect(result.yearPillar, isNotEmpty);
+      expect(result.monthPillar, isNotEmpty);
+      expect(result.dayPillar, isNotEmpty);
+      expect(result.hourPillar, isNotEmpty);
+    });
+
+    test('each pillar is exactly 2 CJK characters', () {
+      final result = BaziCalculator.calculate(
+        birthDate: DateTime(1990, 6, 15),
+        shiChenName: '午时',
+        gender: Gender.male,
+      );
+
+      for (final pillar in [
+        result.yearPillar,
+        result.monthPillar,
+        result.dayPillar,
+        result.hourPillar,
+      ]) {
+        expect(pillar.length, equals(2), reason: '$pillar should be 2 chars');
+        for (final rune in pillar.runes) {
+          // CJK Unified Ideographs: U+4E00–U+9FFF
+          expect(rune, inInclusiveRange(0x4E00, 0x9FFF));
+        }
+      }
+    });
+
+    // 1984-04-15 is clearly in 甲子年 (Chinese New Year was 1984-02-02,
+    // 立春 was ~1984-02-04, both well before April).
+    test('1984-04-15 午时 produces 甲子 yearPillar', () {
+      final result = BaziCalculator.calculate(
+        birthDate: DateTime(1984, 4, 15),
+        shiChenName: '午时',
+        gender: Gender.male,
+      );
+
+      expect(result.yearPillar, equals('甲子'));
+    });
+
+    test('startAge is in valid string range "0"–"10"', () {
+      for (final date in [
+        DateTime(1980, 3, 1),
+        DateTime(1990, 8, 15),
+        DateTime(2000, 12, 25),
+      ]) {
+        final result = BaziCalculator.calculate(
+          birthDate: date,
+          shiChenName: '子时',
+          gender: Gender.female,
+        );
+        final age = int.parse(result.startAge);
+        expect(age, inInclusiveRange(0, 10), reason: 'date=$date');
+      }
+    });
+
+    test('birthYear field matches the input year', () {
+      final result = BaziCalculator.calculate(
+        birthDate: DateTime(1995, 7, 20),
+        shiChenName: '申时',
+        gender: Gender.female,
+      );
+
+      expect(result.birthYear, equals('1995'));
+    });
+
+    test('different years produce different yearPillars', () {
+      final r1984 = BaziCalculator.calculate(
+        birthDate: DateTime(1984, 6, 1),
+        shiChenName: '午时',
+        gender: Gender.male,
+      );
+      final r1990 = BaziCalculator.calculate(
+        birthDate: DateTime(1990, 6, 1),
+        shiChenName: '午时',
+        gender: Gender.male,
+      );
+
+      expect(r1984.yearPillar, isNot(equals(r1990.yearPillar)));
+    });
+  });
 }

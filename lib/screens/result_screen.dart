@@ -121,88 +121,94 @@ class _ResultScreenState extends State<ResultScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return BlocBuilder<DestinyResultBloc, DestinyResultState>(
-      builder: (context, state) {
-        if (state is! DestinyResultSuccess) {
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (didPop, _) {
+        if (!didPop) context.go('/input');
+      },
+      child: BlocBuilder<DestinyResultBloc, DestinyResultState>(
+        builder: (context, state) {
+          if (state is! DestinyResultSuccess) {
+            return Scaffold(
+              body: Center(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    const Text('暂无数据，请先生成K线图'),
+                    const SizedBox(height: 16),
+                    ElevatedButton(
+                      onPressed: () => context.pop(),
+                      child: const Text('返回输入'),
+                    ),
+                  ],
+                ),
+              ),
+            );
+          }
+
+          final result = state.result;
+          final userName = state.userName;
+
           return Scaffold(
-            body: Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  const Text('暂无数据，请先生成K线图'),
-                  const SizedBox(height: 16),
-                  ElevatedButton(
-                    onPressed: () => context.pop(),
-                    child: const Text('返回输入'),
-                  ),
-                ],
+            body: Container(
+              decoration: const BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                  colors: [Color(0xFFFEF2F2), Color(0xFFF5F0E8)],
+                ),
+              ),
+              child: SafeArea(
+                child: CustomScrollView(
+                  slivers: [
+                    // App bar
+                    SliverAppBar(
+                      floating: true,
+                      backgroundColor: const Color.fromARGB(255, 235, 231, 206),
+                      surfaceTintColor: Colors.transparent,
+                      scrolledUnderElevation: 0,
+                      elevation: 0,
+                      leading: IconButton(
+                        icon: const Icon(
+                          Icons.arrow_back,
+                          color: Color(0xFF2C1810),
+                        ),
+                        onPressed: () => context.pop(),
+                      ),
+                      title: Text(
+                        '$userName 的人生K线图',
+                        style: const TextStyle(
+                          color: Color(0xFF2C1810),
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      centerTitle: true,
+                    ),
+
+                    // Risk warning
+                    SliverToBoxAdapter(child: _buildRiskWarning()),
+
+                    // K-Line chart
+                    SliverToBoxAdapter(child: _buildKLineSection(result)),
+
+                    // Analysis cards
+                    SliverToBoxAdapter(
+                      child: _buildAnalysisSection(result.analysis),
+                    ),
+
+                    // Action advice for key years
+                    SliverToBoxAdapter(
+                      child: _buildActionAdviceSection(result.chartData),
+                    ),
+
+                    const SliverToBoxAdapter(child: SizedBox(height: 32)),
+                  ],
+                ),
               ),
             ),
           );
-        }
-
-        final result = state.result;
-        final userName = state.userName;
-
-        return Scaffold(
-          body: Container(
-            decoration: const BoxDecoration(
-              gradient: LinearGradient(
-                begin: Alignment.topCenter,
-                end: Alignment.bottomCenter,
-                colors: [Color(0xFFFEF2F2), Color(0xFFF5F0E8)],
-              ),
-            ),
-            child: SafeArea(
-              child: CustomScrollView(
-                slivers: [
-                  // App bar
-                  SliverAppBar(
-                    floating: true,
-                    backgroundColor: const Color.fromARGB(255, 235, 231, 206),
-                    surfaceTintColor: Colors.transparent,
-                    scrolledUnderElevation: 0,
-                    elevation: 0,
-                    leading: IconButton(
-                      icon: const Icon(
-                        Icons.arrow_back,
-                        color: Color(0xFF2C1810),
-                      ),
-                      onPressed: () => context.pop(),
-                    ),
-                    title: Text(
-                      '$userName 的人生K线图',
-                      style: const TextStyle(
-                        color: Color(0xFF2C1810),
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    centerTitle: true,
-                  ),
-
-                  // Risk warning
-                  SliverToBoxAdapter(child: _buildRiskWarning()),
-
-                  // K-Line chart
-                  SliverToBoxAdapter(child: _buildKLineSection(result)),
-
-                  // Analysis cards
-                  SliverToBoxAdapter(
-                    child: _buildAnalysisSection(result.analysis),
-                  ),
-
-                  // Action advice for key years
-                  SliverToBoxAdapter(
-                    child: _buildActionAdviceSection(result.chartData),
-                  ),
-
-                  const SliverToBoxAdapter(child: SizedBox(height: 32)),
-                ],
-              ),
-            ),
-          ),
-        );
-      },
+        },
+      ),
     );
   }
 
